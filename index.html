@@ -1,0 +1,3072 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="شیفت">
+<meta name="theme-color" content="#EDF1F3">
+<title>بیماران شیفت</title>
+<script>
+  try { document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+  catch (e) { document.documentElement.dataset.theme = 'light'; }
+  document.documentElement.dataset.font = 'system';
+  try { var f = JSON.parse(localStorage.getItem('shift-tracker-font')); if (f) document.documentElement.dataset.font = f; } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ground:#EDF1F3; --surface:#FFFFFF; --ink:#15232B; --ink2:#5A6B75; --faint:#93A1AA; --line:#D6DEE2;
+  --brand:#0E5A6E; --brand-soft:#DCEBEF; --on-brand:#FFFFFF;
+  --warn:#9A4F00; --warn-soft:#FBE9D2;
+  --ok:#2C7A4B; --ok-soft:#DDF0E4;
+  --danger:#B3261E; --danger-line:#E8B9B5;
+  --th:#F4F7F8; --press:#F1F5F6; --bar:rgba(255,255,255,.94);
+  --toast-bg:#15232B; --toast-ink:#FFFFFF; --toast-act:#9FD9E6;
+  --tab-h:56px;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0E171C; --surface:#16232A; --ink:#E6EEF1; --ink2:#9BAEB8; --faint:#6F828D; --line:#26363E;
+  --brand:#4FB3CC; --brand-soft:#173540; --on-brand:#062A34;
+  --warn:#F0B46A; --warn-soft:#3A2A14;
+  --ok:#6CC38C; --ok-soft:#173424;
+  --danger:#FF8A80; --danger-line:#5A2E2B;
+  --th:#1B2B33; --press:#1B2B33; --bar:rgba(22,35,42,.94);
+  --toast-bg:#E6EEF1; --toast-ink:#0E171C; --toast-act:#0E5A6E;
+}
+html[data-font="system"]{--font:-apple-system,"SF Arabic","Geeza Pro",system-ui,sans-serif}
+html[data-font="vazir"]{--font:"Vazirmatn","SF Arabic","Geeza Pro",-apple-system,system-ui,sans-serif}
+html[data-font="bnazanin"]{--font:"AppFont-bnazanin","B Nazanin","BNazanin","Nazanin","SF Arabic","Geeza Pro",system-ui,sans-serif}
+html[data-font="dana"]{--font:"AppFont-dana","Dana","SF Arabic","Geeza Pro",system-ui,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{
+  font-family:var(--font,-apple-system,"SF Arabic","Geeza Pro",system-ui,sans-serif);
+  background:var(--ground);color:var(--ink);font-size:16px;line-height:1.55;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+.faint{color:var(--faint)}
+
+/* layout */
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+.view{flex:1;min-height:0;display:none;flex-direction:column;position:relative}
+.view.active{display:flex}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 10px}
+.top h1{margin:0 0 4px;font-size:26px;font-weight:800;line-height:1.3}
+.sub{color:var(--ink2);font-size:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 14px 100px}
+
+/* shift chip */
+.shiftchip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:99px;padding:3px 12px 3px 10px;min-height:36px;font-size:14px;color:var(--ink)}
+.shiftchip .w{font-weight:600}
+.shiftchip svg{width:15px;height:15px;color:var(--ink2)}
+
+/* tab bar */
+.tabs{display:flex;background:var(--bar);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;height:var(--tab-h);border:0;background:none;color:var(--ink2);font-size:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{color:var(--brand);font-weight:600}
+
+/* buttons */
+.btn{font-weight:600;border-radius:12px;padding:10px 16px;border:1px solid var(--line);background:var(--surface);min-height:46px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.danger{color:var(--danger);border-color:var(--danger-line)}
+.btn.block{width:100%}
+.fab{position:absolute;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;
+  background:var(--brand);color:var(--on-brand);border:0;border-radius:99px;padding:0 20px 0 18px;height:54px;font-weight:600;
+  box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.fab svg{width:22px;height:22px}
+.iconbtn{flex:none;width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn:disabled{opacity:.35}
+.tbtns{display:flex;gap:8px;flex:none}
+.fontbtn .aa{font:600 15px/1 -apple-system,system-ui,sans-serif}
+.themebtn .i-sun{display:none}
+[data-theme="dark"] .themebtn .i-sun{display:block}
+[data-theme="dark"] .themebtn .i-moon{display:none}
+
+/* patient list + swipe */
+.group{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.group > .row{border-bottom:1px solid var(--line)}
+.group > .row:last-child{border-bottom:0}
+.swrap{position:relative;overflow:hidden;border-bottom:1px solid var(--line);touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.swrap:last-child{border-bottom:0}
+.sact{position:absolute;inset:0;display:none;align-items:center;color:#fff;font-weight:600;font-size:15px;pointer-events:none}
+.sact.l{background:#2F7D52;justify-content:flex-start;padding-left:24px}
+.sact.r{background:#C0392B;justify-content:flex-end;padding-right:24px}
+.swrap[data-dir="right"] .sact.l{display:flex}
+.swrap[data-dir="left"] .sact.r{display:flex}
+.swrap.armed .sact{filter:brightness(1.18);font-size:17px}
+.row{display:flex;gap:12px;align-items:flex-start;width:100%;min-height:64px;padding:12px 14px;
+  text-align:right;background:var(--surface);border:0;transition:transform .2s ease;position:relative}
+.row.drag{transition:none}
+.row:active{background:var(--press)}
+.row.dis{background:var(--ok-soft)}
+.row.dis .rname,.row.dis .rmeta,.row.dis .rdx{text-decoration:line-through;color:var(--faint)}
+.bedbadge{flex:none;min-width:44px;padding:3px 6px;margin-top:1px;border-radius:10px;background:var(--brand-soft);
+  color:var(--brand);text-align:center;line-height:1.25}
+.bedbadge small{display:block;font-size:10px}
+.bedbadge b{display:block;font-size:16px;font-weight:600}
+.rbody{flex:1;min-width:0;display:block}
+.rname{display:block;font-weight:600}
+.rmeta{display:flex;flex-wrap:wrap;gap:0 14px;color:var(--ink2);font-size:13.5px}
+.rdx{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pill{font-size:12px;padding:1px 10px;border-radius:99px;background:var(--press);color:var(--ink2);white-space:nowrap}
+.pill.a{background:var(--ok-soft);color:var(--ok)}
+.pill.c{background:var(--brand-soft);color:var(--brand)}
+.pill.k{background:var(--warn-soft);color:var(--warn)}
+.empty{text-align:center;color:var(--ink2);padding:56px 24px}
+.empty p{margin:0 0 6px}
+.hint{margin:10px 2px 0;font-size:13px;color:var(--ink2);text-align:center}
+
+/* overview + history table */
+.ovbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px 10px;flex-wrap:wrap}
+.stats{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+.stats b{color:var(--ink);font-size:18px;margin-inline-end:4px}
+.tablewrap{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;margin:0 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:1170px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:start;font-size:14px}
+th{position:sticky;top:0;z-index:2;background:var(--th);font-weight:600;font-size:13px;color:var(--ink2)}
+td{white-space:pre-wrap;overflow-wrap:anywhere}
+tbody tr:last-child td{border-bottom:0}
+.tablewrap:not(.ro) tbody tr:active td{background:var(--press)}
+.first{position:sticky;right:0;z-index:1;background:var(--surface);border-left:1px solid var(--line)}
+th.first{z-index:3;background:var(--th)}
+.first .in{display:flex;gap:8px;align-items:flex-start;white-space:normal;font-weight:600}
+.first .n{flex:none;min-width:26px;height:24px;padding:0 6px;border-radius:8px;background:var(--brand-soft);color:var(--brand);
+  font-size:13px;display:grid;place-items:center;margin-top:1px}
+tr.dis td{background:var(--ok-soft);color:var(--faint);text-decoration:line-through}
+tr.dis td.first{background:var(--ok-soft)}
+tr.dis td.sm{text-decoration:none}
+tr.dis .tag{display:inline-block;font-size:11px;padding:0 8px;border-radius:99px;background:var(--surface);color:var(--ok);text-decoration:none;font-weight:600}
+.tk{display:flex;gap:6px;align-items:flex-start;white-space:normal;margin-bottom:4px}
+.tk .cmt{display:block;font-size:12.5px;color:var(--ink2)}
+.bx{flex:none;width:15px;height:15px;margin-top:4px;border:1.5px solid var(--ink2);border-radius:50%;
+  font-size:9px;line-height:12px;text-align:center}
+.bx.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.tk.d .tt{text-decoration:line-through;color:var(--faint)}
+.ck{white-space:normal;margin-bottom:4px}
+.ck b{font-weight:600}
+.ck span{color:var(--ink2)}
+.ovfoot{padding:12px 14px 14px}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--ground);display:flex;flex-direction:column;
+  transform:translateY(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
+.sheet.open{transform:none;visibility:visible;transition:transform .25s ease}
+.shead{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
+  background:var(--ground);border-bottom:1px solid var(--line)}
+.shead .title{flex:1;text-align:center;font-weight:600;font-size:15px}
+.donebtn{height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--brand);color:var(--on-brand);font-weight:600}
+.form{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(env(safe-area-inset-bottom) + 220px)}
+.field{margin-bottom:16px}
+.field label,.field .lbl{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.inp,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:12px;-webkit-appearance:none;appearance:none}
+.inp{min-height:48px}
+select.inp{padding-left:34px;background-repeat:no-repeat;background-position:left 10px center;background-size:18px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393A1AA' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+textarea{display:block;min-height:92px;resize:none;overflow:hidden;line-height:1.7}
+.inp:focus,textarea:focus{outline:2px solid var(--brand);border-color:var(--brand)}
+.two{display:grid;grid-template-columns:112px 1fr;gap:12px}
+.agegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.delrow{margin-top:26px;display:grid;gap:8px}
+.dates{display:grid;grid-template-columns:78px 1fr 96px;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 14px;min-height:38px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.addrow{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+.addtask{min-height:46px;border-radius:12px;border:1px dashed var(--ink2);background:transparent;color:var(--brand);font-weight:600}
+
+/* todo items + comments */
+.tasks{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tasks:empty{display:none}
+.task{border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.trow{display:flex;align-items:flex-start}
+.tick{flex:none;width:46px;height:46px;border:0;background:none;display:grid;place-items:center;padding:0}
+.tick span{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink2);display:grid;place-items:center;color:transparent}
+.tick svg{width:14px;height:14px}
+.task.done .tick span{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.task .tt{flex:1;min-width:0;min-height:46px;border:0;border-radius:0;background:transparent;padding:10px 2px;line-height:1.6}
+.task .tt:focus{outline:none}
+.task.done .tt{text-decoration:line-through;color:var(--faint)}
+.tcm,.tdel{flex:none;width:38px;height:46px;border:0;background:none;color:var(--faint);display:grid;place-items:center;padding:0}
+.tcm svg,.tdel svg{width:19px;height:19px}
+.tcm.on{color:var(--brand)}
+textarea.cm{min-height:40px;font-size:14.5px;line-height:1.6;padding:8px 10px;border-radius:10px;border:0;background:var(--press);margin:0 46px 10px 12px;width:auto;display:block}
+textarea.cm:focus{outline:2px solid var(--brand)}
+
+/* checks: what / interval / results */
+.chk{border-bottom:1px solid var(--line);padding:6px 0 4px}
+.chk:last-child{border-bottom:0}
+.chead{display:flex;align-items:center;gap:6px;padding:2px 8px 4px 2px}
+.cname{flex:1;min-width:0;font-weight:600;padding:2px 12px;overflow-wrap:anywhere}
+select.civ{width:118px;flex:none;min-height:40px;padding:0 8px 0 28px;font-size:14.5px;border-radius:10px}
+.chk .civo{width:calc(100% - 24px);margin:2px 12px 8px;min-height:44px}
+.chk textarea.cm{margin:0 12px 8px}
+.reslbl{font-size:12px;color:var(--ink2);padding:2px 14px 4px}
+.res{padding:0 8px 0 4px}
+.rrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.rtm{width:122px;flex:none;min-height:44px;padding:4px 6px;text-align:center;direction:ltr;-webkit-appearance:auto;appearance:auto}
+.rv{flex:1;min-width:0;min-height:44px;padding:8px 10px}
+.res textarea.cm{margin:0 4px 8px 4px}
+.res .tcm,.res .tdel{height:44px}
+.addres{margin:4px 12px 10px;width:calc(100% - 24px);min-height:42px;border-radius:10px;border:1px dashed var(--ink2);
+  background:transparent;color:var(--brand);font-weight:600;font-size:14px}
+
+/* summary tick */
+.sumrow{display:flex;align-items:center;gap:6px;width:100%;min-height:54px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:0 6px;text-align:right;font-weight:600}
+.sumrow .cb{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink2);display:grid;place-items:center;color:transparent;margin:0 10px 0 6px;flex:none}
+.sumrow .cb svg{width:14px;height:14px}
+.sumrow[aria-checked="true"] .cb{background:var(--ok);border-color:var(--ok);color:#fff}
+.sumline[aria-checked="false"]{background:var(--warn-soft);border-color:var(--warn-soft);color:var(--warn)}
+.sumline[aria-checked="false"] .cb{border-color:var(--warn)}
+
+/* photos */
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ph{aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--line);padding:0;background:var(--surface)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.phadd{aspect-ratio:1;border:1px dashed var(--ink2);border-radius:12px;display:grid;place-items:center;
+  color:var(--brand);font-weight:600;font-size:14px;text-align:center;padding:6px;position:relative;cursor:pointer}
+.fileinp{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0}
+.lb{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.94);display:none;flex-direction:column}
+.lb.show{display:flex}
+.lb .bar{display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px}
+.lbbtn{color:#fff;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);height:44px;padding:0 16px;border-radius:12px}
+.lb img{flex:1;min-height:0;width:100%;object-fit:contain;padding-bottom:env(safe-area-inset-bottom)}
+
+/* reminders */
+.tab{position:relative}
+.tabbadge{position:absolute;top:4px;left:50%;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:var(--danger);color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center}
+.cdue{display:flex;gap:12px;flex-wrap:wrap;padding:0 14px 6px;font-size:12.5px;color:var(--ink2)}
+.cdue.od{color:var(--warn);font-weight:600}
+.rem{padding:12px 14px;border-bottom:1px solid var(--line)}
+.rem:last-child{border-bottom:0}
+.rem.od{background:var(--warn-soft)}
+.rem .rtop{display:flex;gap:12px;align-items:flex-start}
+.rem .rmeta{gap:0 10px}
+.rem .rmeta b{color:var(--ink)}
+.rem .due{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:2px}
+.rem.od .due{color:var(--warn);font-weight:600}
+.racts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.racts .btn{min-height:42px;padding:6px 10px;font-size:14px}
+.rsettings{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 10px}
+.photobtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photos:not(:empty){margin-bottom:10px}
+
+.lblrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.lblrow .lbl{margin:0}
+.tmbtn{flex:none;width:40px;height:32px;border:0;background:none;color:var(--faint);display:grid;place-items:center;padding:0;margin:-4px 0}
+.tmbtn svg{width:18px;height:18px}
+.tmbtn[aria-pressed="true"]{color:var(--brand)}
+.tmline{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;line-height:1.4;color:var(--faint);padding:0 14px 8px 12px}
+.task .tmline{padding-right:46px}
+.chk .tmline{padding:0 14px 4px}
+.res .tmline{padding:0 4px 6px}
+
+/* history sheet body */
+.hbody{flex:1;min-height:0;display:flex;flex-direction:column;padding-top:12px}
+.hfoot{display:grid;gap:8px;padding:12px 14px calc(env(safe-area-inset-bottom) + 14px)}
+
+/* dialog + picker + toast */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(5,12,16,.55);display:none;align-items:center;justify-content:center;padding:24px}
+.scrim.show{display:flex}
+.scrim.bottom{align-items:flex-end;padding:0}
+.dialog{background:var(--surface);border-radius:18px;padding:20px;width:100%;max-width:340px}
+.dialog h2{margin:0 0 6px;font-size:18px}
+.dialog p{margin:0 0 18px;color:var(--ink2);font-size:15px}
+.dialog .btns{display:grid;gap:8px}
+.pkbox{width:100%;background:var(--surface);border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:82vh;overflow:auto}
+.pkbox h2{margin:0;font-size:18px}
+.pkrow{display:grid;grid-template-columns:1fr auto;gap:8px;margin:16px 0 10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);z-index:50;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 84px);
+  background:var(--toast-bg);color:var(--toast-ink);border-radius:12px;padding:10px 16px;font-size:14px;
+  display:none;align-items:center;gap:16px;max-width:calc(100% - 32px)}
+.toast.show{display:flex}
+.toast button{background:none;border:0;color:var(--toast-act);font-weight:600;padding:4px 2px}
+
+@media (prefers-reduced-motion:reduce){.sheet,.sheet.open,.row{transition:none}}
+/* ===== motion & polish (iOS-style timing; layout and colors unchanged) ===== */
+:root{--ease:cubic-bezier(.32,.72,0,1);--spring:cubic-bezier(.34,1.56,.64,1);--ring:rgba(14,90,110,.22)}
+[data-theme="dark"]{--ring:rgba(79,179,204,.32)}
+html{-webkit-font-smoothing:antialiased}
+body{text-rendering:optimizeLegibility;animation:appIn .5s var(--ease) both}
+@keyframes appIn{from{opacity:0}}
+button,.row,.chip,.tab,label{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+input,textarea{-webkit-user-select:text;user-select:text;caret-color:var(--brand)}
+::selection{background:var(--brand-soft)}
+.stats b,.cdue,.due,.tmline,.rtm,.bedbadge b,.tabbadge,.first .n{font-variant-numeric:tabular-nums}
+.scroll,.form{overscroll-behavior-y:contain}
+
+/* screens fade in */
+.view.active{animation:viewIn .34s var(--ease) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}}
+.empty{animation:viewIn .5s var(--ease) .05s both}
+
+/* the header hairline appears once content scrolls, like a nav bar */
+.top{border-bottom:1px solid transparent;transition:border-color .25s}
+.top.scrolled{border-bottom-color:var(--line)}
+.shead{border-bottom-color:transparent;transition:border-color .25s;touch-action:none}
+.shead.scrolled{border-bottom-color:var(--line)}
+
+/* sheets: iOS curve, and the screen behind recedes and dims */
+.sheet{transition:transform .5s var(--ease),visibility 0s .5s}
+.sheet.open{transition:transform .5s var(--ease)}
+#app{overflow:hidden;transform-origin:50% 50%;transition:transform .5s var(--ease),border-radius .5s var(--ease)}
+#app::after{content:"";position:absolute;inset:0;z-index:5;background:#000;opacity:0;pointer-events:none;transition:opacity .5s var(--ease)}
+body.sheet-open #app{transform:scale(.94);border-radius:16px}
+body.sheet-open #app::after{opacity:.32}
+
+/* touch feedback */
+.btn,.donebtn,.fab,.iconbtn,.chip,.addtask,.tab,.sumrow,.seg button,.tmbtn,.tcm,.tdel,.tick,.lbbtn,.shiftchip{
+  transition:transform .4s var(--spring),opacity .15s,background-color .2s,border-color .2s,color .2s,box-shadow .2s}
+.btn:active,.donebtn:active,.addtask:active,.chip:active,.sumrow:active,.seg button:active,.lbbtn:active,.shiftchip:active{transform:scale(.97);opacity:.85;transition-duration:.08s}
+.fab:active{transform:scale(.92);transition-duration:.08s}
+.iconbtn:active,.tmbtn:active,.tcm:active,.tdel:active,.tick:active{transform:scale(.88);opacity:.6;transition-duration:.08s}
+.row{transition:transform .42s var(--ease),background-color .3s}
+
+/* tab bar */
+.tab svg{transition:transform .5s var(--spring)}
+.tab[aria-selected="true"] svg{animation:tabPop .5s var(--spring)}
+@keyframes tabPop{from{transform:scale(.78)}}
+.tab:active svg{transform:scale(.86);transition-duration:.08s}
+
+/* focus ring */
+.inp,textarea{transition:border-color .2s,box-shadow .25s,background-color .2s}
+.inp:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3.5px var(--ring)}
+.task .tt:focus{box-shadow:none;border-color:transparent}
+textarea.cm:focus{outline:none;border-color:transparent;box-shadow:0 0 0 3px var(--ring)}
+
+/* ticks draw themselves */
+.tick span,.sumrow .cb{transition:background-color .22s,border-color .22s,transform .4s var(--spring)}
+.tick svg path,.sumrow .cb svg path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .32s var(--ease) .05s}
+.task.done .tick svg path,.sumrow[aria-checked="true"] .cb svg path{stroke-dashoffset:0}
+.task .tt{transition:color .3s}
+
+/* swipe panel */
+.sact{gap:8px;direction:ltr}
+.sact svg{width:22px;height:22px;transition:transform .4s var(--spring)}
+.swrap.armed .sact{font-size:15px;filter:brightness(1.15)}
+.swrap.armed .sact svg{transform:scale(1.28)}
+.swrap.flash .row{animation:flash 1.1s var(--ease) .3s backwards}
+@keyframes flash{from{background-color:var(--brand-soft)}}
+
+/* toast */
+.toast{display:flex!important;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,18px) scale(.96);
+  transition:opacity .25s var(--ease),transform .4s var(--ease),visibility 0s .4s}
+.toast.show{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0) scale(1);
+  transition:opacity .25s var(--ease),transform .5s var(--spring)}
+
+/* alert dialog + bottom picker */
+.scrim{display:flex!important;opacity:0;visibility:hidden;transition:opacity .25s var(--ease),visibility 0s .25s}
+.scrim.show{opacity:1;visibility:visible;transition:opacity .25s var(--ease)}
+.dialog{opacity:0;transform:scale(1.1);transition:transform .35s var(--ease),opacity .2s}
+.scrim.show .dialog{opacity:1;transform:none}
+.pkbox{transform:translateY(100%);transition:transform .5s var(--ease)}
+.scrim.show .pkbox{transform:none}
+
+/* photo viewer */
+.lb{display:flex!important;opacity:0;visibility:hidden;transition:opacity .28s var(--ease),visibility 0s .28s}
+.lb.show{opacity:1;visibility:visible;transition:opacity .28s var(--ease)}
+.lb img{transform:scale(.94);transition:transform .45s var(--ease);touch-action:none}
+.lb.show img{transform:none}
+.ph img,.lb img{-webkit-user-drag:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+
+/* theme switch: icon spins in, colors cross-fade */
+.themebtn.spin svg{animation:spinIn .55s var(--spring)}
+@keyframes spinIn{from{transform:rotate(-100deg) scale(.5);opacity:0}}
+.theme-anim *{transition:background-color .35s ease,color .35s ease,border-color .35s ease!important}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  body.sheet-open #app{transform:none}
+}
+
+/* ===== patient panes, clinical course, next-shift sheet ===== */
+:root{--seg-bg:rgba(118,118,128,.12);--seg-thumb:#fff}
+[data-theme="dark"]{--seg-bg:rgba(118,118,128,.26);--seg-thumb:#5a6a73}
+.psegbar{padding:8px 12px 10px;background:var(--ground);border-bottom:1px solid transparent;transition:border-color .25s}
+.psegbar.scrolled{border-bottom-color:var(--line)}
+.pseg{--n:3;--i:0;position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);background:var(--seg-bg);border-radius:10px;padding:2px}
+.pseg button{position:relative;z-index:1;min-height:32px;border:0;background:none;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--ink2);transition:color .25s}
+.pseg button[aria-selected="true"]{color:var(--ink)}
+.pthumb{position:absolute;top:2px;bottom:2px;right:2px;width:calc((100% - 4px) / var(--n));border-radius:8px;background:var(--seg-thumb);
+  box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.05);transform:translateX(calc(var(--i) * -100%));transition:transform .4s var(--ease)}
+#sheet .shead{border-bottom-color:transparent}
+.ce{border-bottom:1px solid var(--line);padding:4px 0 0}
+.ce:last-child{border-bottom:0}
+.cehead{display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 4px}
+.cst{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+.cehead .tdel{width:34px;height:30px}
+textarea.ct{min-height:44px;border:0;border-radius:0;background:transparent;padding:2px 12px 10px;line-height:1.7}
+textarea.ct:focus{outline:none;box-shadow:none;border-color:transparent}
+.nxsub{margin:6px 0 14px;color:var(--ink2);font-size:14px}
+.nxopts{display:grid;gap:8px;margin:14px 0 4px}
+.sumrow:disabled{opacity:.75;pointer-events:none}
+.nxbtns{display:grid;gap:8px;margin-top:12px}
+
+.ph.bad{display:grid;place-items:center;font-size:11px;color:var(--ink2);padding:6px;text-align:center}
+.ph.bad img{display:none}
+.ph.bad::after{content:"عکس خوانده نشد"}
+.shead .title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+/* ===== consults (service + reason + four steps) and photo zoom ===== */
+.cons{padding:8px 0 4px}
+.crow{display:flex;align-items:center;gap:8px;padding:0 12px 0 4px}
+.clab{flex:none;font-size:13px;color:var(--ink2);white-space:nowrap}
+.cin{flex:1;min-width:0;min-height:40px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:6px 2px;font-size:16px;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.cin:focus{outline:none;box-shadow:none;border-bottom-color:var(--brand)}
+.csteps{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;padding:6px 12px 4px 8px}
+.cstep{display:flex;align-items:center;gap:8px;background:none;border:0;text-align:right;font-size:12.5px;line-height:1.3;color:var(--ink2);min-height:36px;padding:0 2px;border-radius:8px}
+.cstep .sb{flex:none;width:18px;height:18px;border-radius:50%;border:1.8px solid var(--ink2);display:grid;place-items:center;color:transparent;transition:background-color .22s,border-color .22s,transform .4s var(--spring)}
+.cstep .sb svg{width:11px;height:11px}
+.cstep .sb svg path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .3s var(--ease) .04s}
+.cstep[aria-checked="true"]{color:var(--ink)}
+.cstep[aria-checked="true"] .sb{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.cstep[aria-checked="true"] .sb svg path{stroke-dashoffset:0}
+.task.cons.done{background:var(--ok-soft)}
+.cons.done .cstep[aria-checked="true"] .sb{background:var(--ok);border-color:var(--ok);color:#fff}
+.cons .cm{margin:2px 12px 6px 12px}
+.lbhint{flex:1;align-self:center;text-align:center;font-size:12px;color:rgba(255,255,255,.62);padding:0 8px;transition:opacity .25s}
+.lb .bar{gap:8px}
+.lb img{will-change:transform}
+
+/* ===== editable note time, vital-sign results ===== */
+button.cst{background:none;border:0;padding:4px 0;font:inherit;font-size:11px;color:var(--faint);text-decoration:underline dotted;text-underline-offset:3px;font-variant-numeric:tabular-nums}
+button.cst:active{opacity:.6}
+#ts-time{-webkit-appearance:auto;appearance:auto;text-align:center;direction:ltr}
+.vsg{display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr 1fr;gap:6px;padding:0 4px 8px}
+.vsl{display:block}
+.vsl span{display:block;text-align:center;font-size:10.5px;color:var(--ink2);margin-bottom:2px}
+.inp.vsf{min-height:44px;padding:4px 2px;text-align:center;font-size:16px;border-radius:10px}
+.rsp{flex:1}
+
+/* ===== headers with undo/redo, routine card, share options, drug code ===== */
+.top{flex-wrap:wrap;align-items:center}
+.top > div:first-child{display:contents}
+.top h1{order:1;flex:1;min-width:0;margin:0}
+.top .tbtns{order:2}
+.top .sub{order:3;flex-basis:100%;margin-top:6px}
+.tbtns{gap:6px;align-items:center}
+.tbtns .iconbtn{width:40px;height:40px}
+.urbtn:disabled{opacity:.3}
+.psegbar{display:flex;gap:8px;align-items:center}
+.psegbar .pseg{flex:1;min-width:0}
+.psegbar .iconbtn{width:38px;height:38px;border-radius:10px}
+.psegbar .iconbtn svg{width:20px;height:20px}
+.psegbar .pseg button{font-size:13px;padding:0 2px}
+.rtcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rtcard .sumrow{border:0;border-radius:0;background:transparent;border-bottom:1px solid var(--line);min-height:50px}
+.rtcard .sumrow:last-child{border-bottom:0}
+.rthead{display:flex;align-items:baseline;justify-content:space-between;padding:10px 14px 4px;font-size:13px;color:var(--ink2)}
+.rthead b{color:var(--ink);font-size:14px}
+.rtl{flex:1;font-weight:600}
+.rtt{font-size:11px;color:var(--faint);font-weight:400;padding-left:8px}
+.field.dcode{background:var(--warn-soft);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.field.dcode label{color:var(--warn)}
+.shopts{display:grid;gap:8px;margin-top:4px}
+.shrow{display:flex;align-items:center;gap:6px}
+.shrow .sumrow{min-height:46px;font-size:14.5px}
+.shtm{flex:none;width:46px;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--faint);display:grid;place-items:center;padding:0}
+.shtm svg{width:20px;height:20px}
+.shtm[aria-pressed="true"]{color:var(--brand);background:var(--brand-soft);border-color:transparent}
+.shtm.ph{visibility:hidden}
+.shprev{margin-top:12px;max-height:24vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.75;background:var(--press);border-radius:12px;padding:10px 12px;color:var(--ink2)}
+
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Patients -->
+  <section class="view active" id="v-list">
+    <header class="top">
+      <div>
+        <h1>بیماران شیفت</h1>
+        <div class="sub">
+          <button class="shiftchip" type="button" aria-label="ویرایش نام بخش و تاریخ شیفت"><span class="w"></span><span class="dt"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>
+          <span id="count">0 بیمار</span>
+        </div>
+      </div>
+      <div class="tbtns"><button class="iconbtn fontbtn" type="button" aria-label="تغییر فونت"><span class="aa">Aa</span></button><button class="iconbtn themebtn" type="button" aria-label="تغییر حالت تاریک و روشن">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button></div>
+    </header>
+    <div class="scroll" id="list"></div>
+    <button class="fab" id="fab" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      بیمار جدید
+    </button>
+  </section>
+
+  <!-- Overview -->
+  <section class="view" id="v-ov">
+    <header class="top">
+      <div>
+        <h1>نمای کلی</h1>
+        <div class="sub">
+          <button class="shiftchip" type="button" aria-label="ویرایش نام بخش و تاریخ شیفت"><span class="w"></span><span class="dt"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>
+        </div>
+      </div>
+      <div class="tbtns"><button class="iconbtn fontbtn" type="button" aria-label="تغییر فونت"><span class="aa">Aa</span></button><button class="iconbtn themebtn" type="button" aria-label="تغییر حالت تاریک و روشن">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button></div>
+    </header>
+    <div class="ovbar">
+      <div class="stats" id="stats"></div>
+      <button class="btn" id="share" type="button">اشتراک‌گذاری گزارش</button>
+    </div>
+    <div class="tablewrap" id="tw"></div>
+    <div class="empty" id="ov-empty" style="display:none">
+      <p>هنوز بیماری ثبت نشده.</p>
+      <p>بعد از ثبت بیمار، همه اطلاعات اینجا در یک جدول جمع می‌شود.</p>
+    </div>
+    <div class="ovfoot">
+      <button class="btn danger block" id="clear" type="button">پایان شیفت و شیفت بعد</button>
+      <p class="hint">شیفت در «تاریخچه» ذخیره می‌شود و می‌توانی بیماران را به شیفت بعد ببری.</p>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="view" id="v-hist">
+    <header class="top">
+      <div>
+        <h1>تاریخچه</h1>
+        <div class="sub"><span id="hcount">0 شیفت</span></div>
+      </div>
+      <div class="tbtns"><button class="iconbtn fontbtn" type="button" aria-label="تغییر فونت"><span class="aa">Aa</span></button><button class="iconbtn themebtn" type="button" aria-label="تغییر حالت تاریک و روشن">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button></div>
+    </header>
+    <div class="scroll" id="hlist"></div>
+  </section>
+
+  <!-- Reminders -->
+  <section class="view" id="v-rem">
+    <header class="top">
+      <div>
+        <h1>یادآور چک‌ها</h1>
+        <div class="sub"><span id="remcount"></span></div>
+      </div>
+      <div class="tbtns"><button class="iconbtn fontbtn" type="button" aria-label="تغییر فونت"><span class="aa">Aa</span></button><button class="iconbtn themebtn" type="button" aria-label="تغییر حالت تاریک و روشن">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button></div>
+    </header>
+    <div class="rsettings">
+      <button class="chip" id="opt-sound" type="button" aria-pressed="true">صدای هشدار</button>
+      <button class="chip" id="opt-awake" type="button" aria-pressed="false">صفحه روشن بماند</button>
+    </div>
+    <div class="scroll" id="rlist"></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-v="list" aria-selected="true" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      بیماران
+    </button>
+    <button class="tab" role="tab" data-v="rem" aria-selected="false" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15L6 16zM10 21h4"/></svg>
+      یادآور
+      <span class="tabbadge" id="rembadge" hidden></span>
+    </button>
+    <button class="tab" role="tab" data-v="ov" aria-selected="false" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+      نمای کلی
+    </button>
+    <button class="tab" role="tab" data-v="hist" aria-selected="false" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      تاریخچه
+    </button>
+  </nav>
+</div>
+
+<!-- Patient editor -->
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="shead">
+    <button class="donebtn" id="done" type="button">تمام</button>
+    <div class="title" id="stitle"></div>
+    <button class="iconbtn" id="prev" type="button" aria-label="بیمار قبلی">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+    <button class="iconbtn" id="next" type="button" aria-label="بیمار بعدی یا جدید">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </div>
+  <div class="psegbar">
+    <div class="pseg" id="pseg" role="tablist">
+      <span class="pthumb"></span>
+      <button type="button" role="tab" data-p="info" aria-selected="true">اطلاعات بیمار</button>
+      <button type="button" role="tab" data-p="act" aria-selected="false">اقدامات</button>
+      <button type="button" role="tab" data-p="course" aria-selected="false">سیر بالینی</button>
+    </div>
+  </div>
+  <div class="form" id="form">
+<div class="pane" data-pane="info">
+    <div class="two">
+      <div class="field"><label for="f-bed">تخت</label>
+        <select class="inp" id="f-bed"></select></div>
+      <div class="field"><label for="f-name">نام بیمار</label>
+        <input class="inp" id="f-name" data-f="name" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+    </div>
+    <div class="field" id="bed-other-wrap" hidden><label for="f-bed-other">شماره یا نام تخت</label>
+      <input class="inp" id="f-bed-other" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+
+    <div class="field"><label for="f-doctor">نام پزشک</label>
+      <input class="inp" id="f-doctor" data-f="doctor" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label for="f-mrn">شماره پرونده</label>
+      <input class="inp" id="f-mrn" data-f="mrn" dir="ltr" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+
+    <div class="field"><span class="lbl">سن</span>
+      <div class="agegrid">
+        <select class="inp" id="f-ageY" data-f="ageY" aria-label="سال"></select>
+        <select class="inp" id="f-ageM" data-f="ageM" aria-label="ماه"></select>
+      </div></div>
+    <div class="field"><span class="lbl">جنس</span>
+      <div class="seg" id="seg">
+        <button type="button" data-s="مرد" aria-pressed="false">مرد</button>
+        <button type="button" data-s="زن" aria-pressed="false">زن</button>
+      </div></div>
+
+    <div class="field"><label for="f-dx">تشخیص نهایی</label>
+      <textarea id="f-dx" data-f="dx" dir="auto" spellcheck="false"></textarea></div>
+    <div class="field"><label for="f-hx">شرح حال</label>
+      <textarea id="f-hx" data-f="hx" dir="auto" spellcheck="false"></textarea></div>
+
+
+    <div class="field"><span class="lbl">عکس‌ها</span>
+      <div class="photos" id="photos"></div>
+      <div class="photobtns">
+        <button class="addtask" id="phcam" type="button">گرفتن عکس</button>
+        <button class="addtask" id="phgal" type="button">انتخاب از گالری</button>
+      </div>
+      <input class="fileinp" id="fcam" type="file" accept="image/*" capture="environment">
+      <input class="fileinp" id="fgal" type="file" accept="image/*" multiple></div>
+
+    <div class="delrow">
+      <button class="btn danger block" id="del" type="button">حذف این بیمار</button>
+    </div>
+  </div>
+  <div class="pane" data-pane="act" hidden>
+    <div class="field">
+      <div class="rtcard">
+        <button class="sumrow" type="button" role="checkbox" data-rt="hx" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="rtl">نوشتن شرح حال</span><span class="rtt"></span></button>
+      </div>
+      <div class="rtcard" style="margin-top:10px">
+        <div class="rthead"><b>Daily routine</b><span>هر روز از نو</span></div>
+        <button class="sumrow" type="button" role="checkbox" data-rt="dn" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="rtl">نوشتن Daily Note</span><span class="rtt"></span></button>
+        <button class="sumrow" type="button" role="checkbox" data-rt="pc" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="rtl">چک پاراکلینیک</span><span class="rtt"></span></button>
+      </div>
+    </div>
+    <div class="field"><div class="lblrow"><span class="lbl">اقدامات لازم</span><button class="tmbtn" type="button" data-tm="actions" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+      <div class="tasks" id="t-actions" data-key="actions"></div>
+      <div class="addrow"><button class="addtask" type="button" data-add="actions">+ افزودن اقدام</button></div></div>
+
+    <div class="field"><div class="lblrow"><span class="lbl">مشاوره‌ها</span><button class="tmbtn" type="button" data-tm="consults" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+      <div class="tasks" id="t-consults" data-key="consults"></div>
+      <div class="addrow"><button class="addtask" type="button" data-add="consults">+ افزودن مشاوره</button></div></div>
+
+    <div class="field"><div class="lblrow"><span class="lbl">چک‌ها</span><button class="tmbtn" type="button" data-tm="checks" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+      <div class="tasks" id="t-checks"></div>
+      <div class="addrow"><button class="addtask" id="addchk" type="button">+ افزودن چک</button></div></div>
+
+    <div class="field">
+      <button class="sumrow" id="dischg" type="button" role="checkbox" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>در لیست ترخیص است</button>
+      <div class="field dcode" id="dcodeRow" hidden><label for="f-drugCode">کد دارو</label><input class="inp" id="f-drugCode" data-f="drugCode" dir="ltr" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="کد دارو را بنویس"></div>
+      <button class="sumrow sumline" id="sum" type="button" role="checkbox" aria-checked="false" hidden style="margin-top:8px"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>خلاصه پرونده نوشته شد</button></div>
+
+  </div>
+  <div class="pane" data-pane="course" hidden>
+    <div class="field">
+      <div class="tasks" id="t-course"></div>
+      <div class="addrow"><button class="addtask" type="button" data-addc="1">+ نوت جدید</button></div></div>
+    <div class="field"><label for="f-notes">توضیحات</label>
+      <textarea id="f-notes" data-f="notes" dir="auto" spellcheck="false"></textarea></div>
+  </div>
+  </div>
+</div>
+
+<!-- Shift info: ward + Jalali date -->
+<div class="sheet" id="msheet" aria-hidden="true">
+  <div class="shead">
+    <button class="donebtn" id="mdone" type="button">تمام</button>
+    <div class="title">اطلاعات شیفت</div>
+  </div>
+  <div class="form">
+    <div class="field"><label for="w-ward">نام بخش</label>
+      <input class="inp" id="w-ward" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="chips" id="wchips"></div></div>
+    <div class="field"><span class="lbl">تاریخ شیفت (شمسی)</span>
+      <div class="dates">
+        <select class="inp" id="d-day" aria-label="روز"></select>
+        <select class="inp" id="d-mon" aria-label="ماه"></select>
+        <select class="inp" id="d-year" aria-label="سال"></select>
+      </div>
+      <div class="addrow"><button class="addtask" id="d-today" type="button">امروز</button></div></div>
+  </div>
+</div>
+
+<!-- History shift viewer -->
+<div class="sheet" id="hsheet" aria-hidden="true">
+  <div class="shead">
+    <button class="donebtn" id="hclose" type="button">بستن</button>
+    <div class="title" id="htitle"></div>
+  </div>
+  <div class="hbody">
+    <div class="ovbar"><div class="stats" id="hstats"></div></div>
+    <div class="tablewrap ro" id="htw"></div>
+    <div class="hfoot">
+      <button class="btn primary block" id="hrestore" type="button">بازگردانی به شیفت فعلی</button>
+      <button class="btn block" id="hshare" type="button">اشتراک‌گذاری گزارش</button>
+      <button class="btn danger block" id="hdel" type="button">حذف از تاریخچه</button>
+    </div>
+  </div>
+</div>
+
+<!-- Photo viewer -->
+<div class="lb" id="lb">
+  <div class="bar">
+    <button class="lbbtn" id="lbclose" type="button">بستن</button>
+    <span class="lbhint" id="lbhint">دو بار ضربه یا دو انگشت برای زوم</span>
+    <button class="lbbtn" id="lbdel" type="button">حذف عکس</button>
+  </div>
+  <img id="lbimg" alt="" draggable="false">
+</div>
+
+<!-- Check picker -->
+<div class="scrim bottom" id="pk">
+  <div class="pkbox" role="dialog" aria-modal="true" aria-labelledby="pkt">
+    <h2 id="pkt">چه چیزی چک شود؟</h2>
+    <div class="chips" id="pkchips"></div>
+    <div class="pkrow">
+      <input class="inp" id="pkin" dir="auto" placeholder="مورد دیگر…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn primary" id="pkadd" type="button">افزودن</button>
+    </div>
+    <button class="btn block" id="pkclose" type="button">بستن</button>
+  </div>
+</div>
+
+<!-- Edit the time of a clinical-course note -->
+<div class="scrim bottom" id="ts">
+  <div class="pkbox" role="dialog" aria-modal="true" aria-labelledby="tst">
+    <h2 id="tst">تاریخ و ساعت این نوت</h2>
+    <div class="dates" style="margin-top:14px">
+      <select class="inp" id="ts-day" aria-label="روز"></select>
+      <select class="inp" id="ts-mon" aria-label="ماه"></select>
+      <select class="inp" id="ts-year" aria-label="سال"></select>
+    </div>
+    <div class="field" style="margin-top:12px"><label for="ts-time">ساعت</label>
+      <input class="inp" id="ts-time" type="time"></div>
+    <div class="nxbtns">
+      <button class="btn primary block" id="ts-save" type="button">ذخیره</button>
+      <button class="btn block" id="ts-now" type="button">همین الان</button>
+      <button class="btn block" id="ts-cancel" type="button">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- End of shift -->
+<div class="scrim bottom" id="nx">
+  <div class="pkbox" role="dialog" aria-modal="true" aria-labelledby="nxt">
+    <h2 id="nxt">پایان شیفت</h2>
+    <p class="nxsub" id="nxsub"></p>
+    <div class="pseg" id="nxseg" style="--n:2" role="tablist">
+      <span class="pthumb"></span>
+      <button type="button" role="tab" data-m="carry" aria-selected="true">انتقال بیماران</button>
+      <button type="button" role="tab" data-m="empty" aria-selected="false">شروع خالی</button>
+    </div>
+    <div class="nxopts" id="nxopts">
+      <button class="sumrow" type="button" role="checkbox" aria-checked="true" disabled><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>اطلاعات بیمار و سیر بالینی (همیشه)</button>
+      <button class="sumrow" type="button" role="checkbox" data-k="actions" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>اقدامات</button>
+      <button class="sumrow" type="button" role="checkbox" data-k="consults" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>مشاوره‌ها</button>
+      <button class="sumrow" type="button" role="checkbox" data-k="checks" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>چک‌ها</button>
+      <div class="pseg" id="nxscope" style="--n:2" role="tablist" hidden>
+        <span class="pthumb"></span>
+        <button type="button" role="tab" data-s="pending" aria-selected="true">فقط انجام‌نشده‌ها</button>
+        <button type="button" role="tab" data-s="all" aria-selected="false">همه موارد</button>
+      </div>
+      <p class="hint" id="nxhint"></p>
+    </div>
+    <div class="nxbtns">
+      <button class="btn primary block" id="nxgo" type="button">پایان شیفت</button>
+      <button class="btn block" id="nxno" type="button">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share options -->
+<div class="scrim bottom" id="sh">
+  <div class="pkbox" role="dialog" aria-modal="true" aria-labelledby="sht">
+    <h2 id="sht">اشتراک‌گذاری</h2>
+    <p class="nxsub">انتخاب کن چه چیزی فرستاده شود. آیکن ساعت یعنی همراه با تاریخ و ساعت.</p>
+    <div class="shopts" id="shopts"></div>
+    <div class="shprev" id="shprev" dir="auto"></div>
+    <div class="nxbtns">
+      <button class="btn primary block" id="shgo" type="button">ارسال</button>
+      <button class="btn block" id="shcopy" type="button">کپی متن</button>
+      <button class="btn block" id="shno" type="button">بستن</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="scrim" id="scrim">
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dt">
+    <h2 id="dt"></h2>
+    <p id="db"></p>
+    <div class="btns">
+      <button class="btn danger" id="dok" type="button"></button>
+      <button class="btn" id="dno" type="button">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<input class="fileinp" id="ffile" type="file">
+<div class="toast" id="toast" role="status"><span id="tmsg"></span><button id="tact" type="button"></button></div>
+
+<script>
+(() => {
+  const KEY = 'shift-tracker-v1';
+  const HKEY = 'shift-tracker-history-v1';
+  const TKEY = 'shift-tracker-theme';
+  const LISTS = ['actions','consults'];
+  const LABEL = { actions:'اقدام', consults:'مشاوره' };
+  const BEDS = 60;
+  const DOC = 'دکتر ';
+  const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const PRESETS = ['BS','Vital sign','BP','PR','RR','Temp','SpO2','I/O','UOP','GCS','ECG','ABG/VBG','CBC','K','BUN/Cr','Troponin','Pain'];
+  const IVS = ['15m','30m','1h','2h','3h','4h','6h','8h','12h','24h'];
+  const $ = s => document.querySelector(s);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const has = v => v && String(v).trim();
+  const docEmpty = v => !has(v) || String(v).replace(/\s+/g, ' ').trim() === 'دکتر';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const nowHM = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+  /* ---------- motion helpers ---------- */
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const EASE = 'cubic-bezier(.32,.72,0,1)';
+  const SPRING = 'cubic-bezier(.34,1.56,.64,1)';
+  function anim(el, kf, opts) {
+    if (!el || RM.matches || !el.animate) return null;
+    return el.animate(kf, Object.assign({ duration: 300, easing: EASE }, opts));
+  }
+  const popEl = el => anim(el, [{ transform: 'scale(.78)' }, { transform: 'scale(1.14)', offset: .6 }, { transform: 'scale(1)' }], { duration: 420, easing: SPRING });
+  // haptics: iOS 17.4+ Safari taps for a real toggle switch; other browsers use vibrate
+  const hapticEl = (() => {
+    try {
+      const l = document.createElement('label');
+      l.setAttribute('aria-hidden', 'true');
+      l.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
+      const i = document.createElement('input');
+      i.type = 'checkbox';
+      i.setAttribute('switch', '');
+      l.appendChild(i);
+      document.body.appendChild(l);
+      return l;
+    } catch (e) { return null; }
+  })();
+  function haptic(kind) {
+    try { if (navigator.vibrate) navigator.vibrate(kind === 'commit' ? 18 : 8); } catch (e) {}
+    try { if (hapticEl) { hapticEl.click(); if (kind === 'commit') setTimeout(() => hapticEl.click(), 70); } } catch (e) {}
+  }
+  function collapseThen(el, fn) {
+    if (RM.matches || !el.animate) { fn(); return; }
+    let done = false;
+    const go = () => { if (!done) { done = true; fn(); } };
+    const h = el.offsetHeight;
+    el.style.overflow = 'hidden';
+    const a = el.animate(
+      [{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px', borderBottomWidth: '0px' }],
+      { duration: 240, easing: EASE, fill: 'forwards' });
+    a.onfinish = go;
+    setTimeout(go, 340);
+  }
+  function staggerIn(v) {
+    const sel = { list: '#list .swrap', hist: '#hlist .row', rem: '#rlist .rem' }[v];
+    if (!sel) return;
+    [...document.querySelectorAll(sel)].slice(0, 14).forEach((el, i) =>
+      anim(el, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { duration: 460, delay: 40 + i * 22, fill: 'backwards' }));
+  }
+  function staggerForm(sel) {
+    [...document.querySelectorAll(`${sel} > .field, ${sel} > .two, ${sel} > .delrow, ${sel} > .pane:not([hidden]) > .field, ${sel} > .pane:not([hidden]) > .two, ${sel} > .pane:not([hidden]) > .delrow`)].slice(0, 10).forEach((el, i) =>
+      anim(el, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 440, delay: 100 + i * 18, fill: 'backwards' }));
+  }
+  let flashId = null;
+  const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>';
+  const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
+
+  /* ---------- data model ---------- */
+  const blank = () => ({ id: uid(), bed:'', name:'', doctor:DOC, mrn:'', ageY:'', ageM:'', sex:'', hx:'', dx:'', notes:'',
+    actions:[], consults:[], checks:[], course:[], summary:false, photos:[], discharged:false, rt:{hx:0,dn:0,pc:0}, drugCode:'' });
+  const realItems = list => list.filter(i => has(i.t));
+  const isBlank = p => ['bed','name','mrn','ageY','ageM','sex','hx','dx','notes','drugCode'].every(f => !has(p[f])) && docEmpty(p.doctor) &&
+    !p.summary && !p.discharged && !p.photos.length && !p.checks.length && !p.course.some(e => has(e.t)) && LISTS.every(k => realItems(p[k]).length === 0) &&
+    !(p.rt && (p.rt.hx || p.rt.dn || p.rt.pc));
+
+  const normItems = v => Array.isArray(v)
+    ? v.map(i => ({ id: i.id || uid(), t: String(i.t || ''), d: !!i.d, c: String(i.c || ''), at: i.at || 0, dt: i.dt || 0 }))
+    : String(v || '').split('\n').map(s => s.trim()).filter(Boolean).map(t => ({ id: uid(), t, d: false, c: '', at: Date.now(), dt: 0 }));
+  const normChecks = v => Array.isArray(v)
+    ? v.map(c => (c && c.w !== undefined)
+        ? { id: c.id || uid(), w: String(c.w || ''), iv: String(c.iv || ''), c: String(c.c || ''), t0: c.t0 || Date.now(), dn: c.dn || 0,
+            r: (c.r || []).map(r => ({ id: r.id || uid(), tm: String(r.tm || ''), ts: r.ts || 0, v: String(r.v || ''), c: String(r.c || ''), vs: r.vs || undefined })) }
+        : { id: (c && c.id) || uid(), w: String((c && c.t) || ''), iv: '', c: '', t0: Date.now(), dn: 0, r: [] }).filter(c => has(c.w))
+    : String(v || '').split('\n').map(s => s.trim()).filter(Boolean).map(w => ({ id: uid(), w, iv: '', c: '', t0: Date.now(), dn: 0, r: [] }));
+  function normalize(p) {
+    const q = Object.assign(blank(), p);
+    q.doctor = has(p.doctor) ? p.doctor : DOC;
+    if (p.hx === undefined) { q.hx = p.dx || ''; q.dx = ''; }           // old combined field -> history
+    if (p.ageY === undefined && has(p.age)) { const m = String(p.age).match(/^\d+/); q.ageY = m ? m[0] : ''; }
+    q.ageY = q.ageY == null ? '' : String(q.ageY);
+    q.ageM = q.ageM == null ? '' : String(q.ageM);
+    q.actions = normItems(p.actions);
+    q.consults = normConsults(p.consults);
+    q.checks = normChecks(p.checks);
+    q.course = Array.isArray(p.course) ? p.course.map(e => ({ id: e.id || uid(), t: String(e.t || ''), at: e.at || 0, ts: e.ts || e.at || 0, man: !!e.man })) : [];
+    q.photos = Array.isArray(p.photos) ? p.photos.filter(x => x && x.id).map(x => ({ id: x.id })) : [];
+    q.summary = !!p.summary;
+    q.discharged = !!p.discharged;
+    q.rt = Object.assign({ hx: 0, dn: 0, pc: 0 }, p.rt || {});
+    q.drugCode = String(p.drugCode || '');
+    delete q.age;
+    return q;
+  }
+  const prune = p => {
+    LISTS.forEach(k => { p[k] = p[k].filter(i => has(i.t)); });
+    p.checks.forEach(c => { c.r = c.r.filter(r => has(r.v) || has(r.c)); });
+    p.course = p.course.filter(e => has(e.t));
+  };
+
+  /* ---------- top of the actions tab: history note (once) + Daily routine (resets every day) ---------- */
+  const RT = { hx: { label: 'نوشتن شرح حال', daily: false }, dn: { label: 'نوشتن Daily Note', daily: true }, pc: { label: 'چک پاراکلینیک', daily: true } };
+  const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  const doneToday = ts => !!ts && dayKey(ts) === dayKey(Date.now());
+  const rtDone = (p, k) => RT[k].daily ? doneToday(p.rt[k]) : !!p.rt[k];
+  function syncRoutine(p) {
+    document.querySelectorAll('#form [data-rt]').forEach(b => {
+      const k = b.dataset.rt, d = rtDone(p, k);
+      b.setAttribute('aria-checked', String(d));
+      const tt = b.querySelector('.rtt');
+      if (tt) tt.textContent = (d && showTm.has('actions') && p.rt[k]) ? stamp(p.rt[k]) : '';
+    });
+  }
+
+  const bedKey = b => { const s = String(b || '').trim(); if (!s) return [2, 0, '']; if (/^\d+$/.test(s)) return [0, +s, '']; return [1, 0, s]; };
+  const sortPatients = ps => ps.sort((a, b) => {
+    const x = bedKey(a.bed), y = bedKey(b.bed);
+    return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], 'fa');
+  });
+  function ageText(p) {
+    const hy = has(p.ageY), hm = has(p.ageM);
+    if (!hy && !hm) return '';
+    const Y = +p.ageY || 0, M = +p.ageM || 0;
+    if (Y > 0 && M > 0) return `${Y} سال و ${M} ماهه`;
+    if (Y > 0) return `${Y} ساله`;
+    if (M > 0) return `${M} ماهه`;
+    return (hy && !hm) ? 'زیر 1 سال' : 'زیر 1 ماه';
+  }
+
+  /* ---------- Jalali date ---------- */
+  const LEAP = [1,5,9,13,17,22,26,30];
+  const isLeap = y => LEAP.includes(y % 33);
+  const dim = (y, m) => m <= 6 ? 31 : m <= 11 ? 30 : (isLeap(y) ? 30 : 29);
+  function jOf(date) {
+    try {
+      const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(date || new Date());
+      const o = {};
+      parts.forEach(p => { if (p.type === 'year' || p.type === 'month' || p.type === 'day') o[p.type] = parseInt(p.value, 10); });
+      if (o.year && o.month && o.day) return { y: o.year, m: o.month, d: o.day };
+    } catch (e) {}
+    return { y: 1405, m: 1, d: 1 };
+  }
+  const dateText = dt => dt ? `${dt.d} ${MONTHS[dt.m - 1]} ${dt.y}` : '';
+  const wardOf = s => has(s && s.ward) ? s.ward.trim() : '';
+
+  /* ---------- state ---------- */
+  let state = { patients: [], shift: { ward: '', date: jOf() } };
+  let history = [];               // newest first: { id, endedAt, ward, date, patients }
+  let current = null;             // patient id in editor
+  let currentH = null;            // history entry id in viewer
+  let view = 'list';
+  let theme = null;
+  let saveTimer = null;
+  const openCm = new Set();       // ids whose comment box is open
+  const ivOther = new Set();      // check ids showing the custom-interval input
+
+  const store = {
+    async load(key) {
+      try { if (window.storage) { const r = await window.storage.get(key, false); if (r && r.value) return JSON.parse(r.value); } } catch (e) {}
+      try { const v = window.localStorage.getItem(key); if (v) return JSON.parse(v); } catch (e) {}
+      return null;
+    },
+    async save(key, data) {
+      const s = JSON.stringify(data);
+      try { if (window.storage) { await window.storage.set(key, s, false); return; } } catch (e) {}
+      try { window.localStorage.setItem(key, s); } catch (e) {}
+    }
+  };
+  const flushRaw = () => { clearTimeout(saveTimer); store.save(KEY, state); };
+  const flush = () => { flushRaw(); scheduleCheckpoint(0); };
+  const flushH = () => store.save(HKEY, { shifts: history });
+  const queueSave = () => { clearTimeout(saveTimer); scheduleCheckpoint(700); saveTimer = setTimeout(flushRaw, 250); };
+  addEventListener('pagehide', () => { flush(); flushH(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { flush(); flushH(); } });
+  /* ---------- undo / redo: many steps, on every screen ---------- */
+  const undoStack = [], redoStack = [];
+  let lastSnap = null, ckTimer = null, pendingCk = false;
+  const MAX_UNDO = 80;
+  function currentSnap() {
+    const h = JSON.stringify(history);
+    return { s: JSON.stringify({ patients: state.patients, shift: state.shift }), h: (lastSnap && lastSnap.h === h) ? lastSnap.h : h };
+  }
+  function updateUR() {
+    document.querySelectorAll('.undobtn').forEach(b => { b.disabled = !(undoStack.length || pendingCk); });
+    document.querySelectorAll('.redobtn').forEach(b => { b.disabled = !redoStack.length; });
+  }
+  function checkpoint() {
+    clearTimeout(ckTimer);
+    pendingCk = false;
+    if (!lastSnap) return;
+    const cur = currentSnap();
+    if (cur.s !== lastSnap.s || cur.h !== lastSnap.h) {
+      undoStack.push(lastSnap);
+      if (undoStack.length > MAX_UNDO) undoStack.shift();
+      redoStack.length = 0;
+      lastSnap = cur;
+    }
+    updateUR();
+  }
+  function scheduleCheckpoint(delay) {
+    if (!lastSnap) return;
+    clearTimeout(ckTimer);
+    pendingCk = true;
+    updateUR();
+    if (delay) ckTimer = setTimeout(checkpoint, delay); else checkpoint();
+  }
+  const get = id => state.patients.find(p => p.id === id);
+
+  /* ---------- photo storage (IndexedDB, blobs) ---------- */
+  const blobToDataURL = b => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(b);
+  });
+  const blobToBuf = b => b.arrayBuffer ? b.arrayBuffer() : new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsArrayBuffer(b);
+  });
+  // photos are stored as raw bytes (safer than Blobs in iOS Safari's IndexedDB)
+  const withTimeout = (pr, ms, tag) => new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error(tag + '-timeout')), ms);
+    pr.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); });
+  });
+  const photoStore = {
+    db: null, ok: false, mem: new Map(),
+    async init() {
+      try {
+        if (!window.indexedDB) return;
+        this.db = await withTimeout(new Promise((res, rej) => {
+          const r = indexedDB.open('shift-tracker-photos', 1);
+          r.onupgradeneeded = () => r.result.createObjectStore('p');
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+          r.onblocked = () => rej(new Error('blocked'));
+        }), 3000, 'idb-open');
+        this.ok = true;
+      } catch (e) { this.db = null; this.ok = false; }
+    },
+    run(mode, fn) {
+      return withTimeout(new Promise((res, rej) => {
+        const t = this.db.transaction('p', mode);
+        const rq = fn(t.objectStore('p'));
+        t.oncomplete = () => res(rq ? rq.result : undefined);
+        t.onerror = () => rej(t.error);
+        t.onabort = () => rej(t.error);
+      }), 5000, 'idb');
+    },
+    async put(id, blob) {
+      const rec = { type: blob.type || 'image/jpeg', buf: await blobToBuf(blob) };
+      if (this.db) {
+        try { await this.run('readwrite', s => s.put(rec, id)); this.mem.delete(id); return; }
+        catch (e) { this.ok = false; }
+      }
+      this.mem.set(id, rec);
+    },
+    async get(id) {
+      let rec = this.mem.get(id);
+      if (!rec && this.db) { try { rec = await this.run('readonly', s => s.get(id)); } catch (e) {} }
+      return rec ? new Blob([rec.buf], { type: rec.type }) : null;
+    },
+    async del(id) {
+      this.mem.delete(id);
+      try { if (this.db) await this.run('readwrite', s => s.delete(id)); } catch (e) {}
+    }
+  };
+  const urls = new Map();
+  async function photoURL(id) {
+    if (urls.has(id)) return urls.get(id);
+    try {
+      const b = await photoStore.get(id);
+      if (!b) return '';
+      const u = await blobToDataURL(b);   // data: URLs work in every viewer
+      urls.set(id, u);
+      return u;
+    } catch (e) { return ''; }
+  }
+  // a photo is only erased when no patient (current shift or history) still points at it
+  function photoInUse(id) {
+    const holds = ps => ps.some(p => (p.photos || []).some(x => x.id === id));
+    return holds(state.patients) || history.some(h => holds(h.patients));
+  }
+  function dropPhotos(ps) {
+    ps.forEach(p => (p.photos || []).forEach(ph => {
+      if (photoInUse(ph.id)) return;
+      photoStore.del(ph.id);
+      if (urls.has(ph.id)) { URL.revokeObjectURL(urls.get(ph.id)); urls.delete(ph.id); }
+    }));
+  }
+  async function compress(file) {
+    let src = null, w = 0, h = 0, cleanup = () => {};
+    try {
+      if (window.createImageBitmap) {
+        const bm = await createImageBitmap(file);
+        src = bm; w = bm.width; h = bm.height;
+        cleanup = () => { try { bm.close(); } catch (e) {} };
+      }
+    } catch (e) { src = null; }
+    if (!src) {
+      const url = await blobToDataURL(file);   // data: URLs only; some HTML viewers block blob: URLs
+      const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      src = im; w = im.naturalWidth; h = im.naturalHeight;
+    }
+    try {
+      const s = Math.min(1, 1600 / Math.max(w, h));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * s));
+      c.height = Math.max(1, Math.round(h * s));
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      return await new Promise((res, rej) => {
+        try { c.toBlob(b => b ? res(b) : rej(new Error('toBlob')), 'image/jpeg', 0.78); } catch (e) { rej(e); }
+      });
+    } finally { cleanup(); }
+  }
+
+  /* ---------- theme ---------- */
+  function applyTheme() {
+    let dark = false;
+    try { dark = theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {}
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    $('meta[name="theme-color"]').setAttribute('content', dark ? '#0E171C' : '#EDF1F3');
+  }
+  document.querySelectorAll('.themebtn').forEach(b => b.addEventListener('click', () => {
+    theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.classList.add('theme-anim');
+    setTimeout(() => document.documentElement.classList.remove('theme-anim'), 450);
+    b.classList.add('spin');
+    setTimeout(() => b.classList.remove('spin'), 600);
+    haptic('tick');
+    applyTheme();
+    store.save(TKEY, theme);
+  }));
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!theme) applyTheme(); }); } catch (e) {}
+
+  /* ---------- font (tap Aa to cycle) ---------- */
+  const FONTS = [['system','فونت آیفون'],['vazir','Vazirmatn'],['bnazanin','B Nazanin'],['dana','Dana']];
+  const FILE_FONTS = { bnazanin: 'AppFont-bnazanin', dana: 'AppFont-dana' };   // fonts the user imports from a file
+  const fontReady = { system: true, vazir: true, bnazanin: false, dana: false };
+  const FKEY = 'shift-tracker-font';
+  let fontId = document.documentElement.dataset.font || 'system';
+  let pendingFont = null;
+
+  function fontInstalled(fam) {
+    try {
+      const g = document.createElement('canvas').getContext('2d');
+      const t = 'سلام دنیا، ۱۲۳ abc';
+      return ['monospace', 'serif'].some(base => {
+        g.font = `40px ${base}`;
+        const w0 = g.measureText(t).width;
+        g.font = `40px "${fam}", ${base}`;
+        return g.measureText(t).width !== w0;
+      });
+    } catch (e) { return false; }
+  }
+  async function loadFontFile(id, blob) {
+    const face = new FontFace(FILE_FONTS[id], await blobToBuf(blob));
+    await face.load();
+    document.fonts.add(face);
+    fontReady[id] = true;
+  }
+  async function loadSavedFonts() {
+    for (const id of Object.keys(FILE_FONTS)) {
+      try { const b = await photoStore.get('font-' + id); if (b) await loadFontFile(id, b); } catch (e) {}
+    }
+    if (fontInstalled('B Nazanin') || fontInstalled('BNazanin')) fontReady.bnazanin = true;
+    if (fontInstalled('Dana')) fontReady.dana = true;
+  }
+  function applyFont(id) {
+    fontId = id;
+    document.documentElement.dataset.font = id;
+    store.save(FKEY, id);
+    toast('فونت: ' + FONTS.find(f => f[0] === id)[1]);
+  }
+  async function selectFont(id) {
+    if (fontReady[id]) { applyFont(id); return; }
+    const name = FONTS.find(f => f[0] === id)[1];
+    const yes = await ask('فونت ' + name, 'این فونت روی گوشی نیست. یک بار فایل فونت (ttf، otf یا woff2) را از Files انتخاب کن تا ذخیره شود.',
+      'انتخاب فایل', false, () => { pendingFont = id; $('#ffile').click(); });   // click must happen inside the tap
+    if (!yes) toast('فونت ' + name + ' اضافه نشد');
+  }
+  $('#ffile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    const id = pendingFont;
+    pendingFont = null;
+    if (!f || !id) return;
+    try {
+      await loadFontFile(id, f);
+      await photoStore.put('font-' + id, f);
+      applyFont(id);
+      if (!photoStore.ok) toast('در این محیط فونت فقط تا بستن صفحه می‌ماند');
+    } catch (err) { toast('این فایل به‌عنوان فونت خوانده نشد'); }
+  });
+  document.querySelectorAll('.fontbtn').forEach(b => b.addEventListener('click', () => {
+    const i = FONTS.findIndex(f => f[0] === fontId);
+    selectFont(FONTS[(i + 1) % FONTS.length][0]);
+  }));
+
+  /* ---------- shift chip ---------- */
+  function renderShift() {
+    const w = wardOf(state.shift);
+    document.querySelectorAll('.shiftchip').forEach(c => {
+      const el = c.querySelector('.w');
+      el.textContent = w || 'نام بخش';
+      el.classList.toggle('faint', !w);
+      c.querySelector('.dt').textContent = dateText(state.shift.date);
+    });
+  }
+
+  /* ---------- summaries ---------- */
+  const active = ps => ps.filter(p => !p.discharged);
+  const openCount = (ps, k) => active(ps).reduce((n, p) => n + realItems(p[k]).filter(i => !i.d).length, 0);
+  const statsHTML = ps => {
+    const a = active(ps);
+    return `<span><b>${a.length}</b>بیمار</span><span><b>${ps.length - a.length}</b>ترخیص</span>` +
+      `<span><b>${openCount(ps, 'actions')}</b>اقدام باز</span><span><b>${openCount(ps, 'consults')}</b>مشاوره باز</span>` +
+      `<span><b>${ps.filter(p => p.discharged && !p.summary).length}</b>خلاصه ناقص</span>`;
+  };
+  function pillFor(key, list) {
+    const items = realItems(list);
+    if (!items.length) return '';
+    const d = items.filter(i => i.d).length;
+    return `<span class="pill ${d === items.length ? 'a' : 'k'}">${LABEL[key]} ${d}/${items.length}</span>`;
+  }
+
+  /* ---------- patient list (swipe: right = discharge, left = delete) ---------- */
+  function rowHTML(p) {
+    const meta = [
+      docEmpty(p.doctor) ? '' : `<span dir="auto">${esc(p.doctor.trim())}</span>`,
+      ageText(p) ? `<span>${esc(ageText(p))}</span>` : '',
+      has(p.sex) ? `<span>${esc(p.sex)}</span>` : ''
+    ].join('');
+    const dxLine = has(p.dx) ? p.dx.trim().split('\n')[0] : (has(p.hx) ? p.hx.trim().split('\n')[0] : '');
+    let pills;
+    if (p.discharged) pills = '<span class="pill a">ترخیص شد</span>' + (p.summary ? '<span class="pill a">خلاصه ✓</span>' : '<span class="pill k">خلاصه ناقص</span>');
+    else pills = [
+      pillFor('actions', p.actions), pillFor('consults', p.consults),
+      p.checks.length ? `<span class="pill c">چک ${p.checks.length}</span>` : '',
+      p.photos.length ? `<span class="pill">عکس ${p.photos.length}</span>` : ''
+    ].join('');
+    return `<div class="swrap" data-id="${p.id}">` +
+      `<div class="sact l">${ICON_OK}<span>${p.discharged ? 'لغو ترخیص' : 'ترخیص'}</span></div><div class="sact r"><span>حذف</span>${ICON_TRASH}</div>` +
+      `<button class="row${p.discharged ? ' dis' : ''}" type="button" data-id="${p.id}">` +
+      `<span class="bedbadge"><small>تخت</small><b dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '—'}</b></span><span class="rbody">` +
+      `<span class="rname${has(p.name) ? '' : ' faint'}" dir="auto">${esc(has(p.name) ? p.name.trim() : 'بدون نام')}</span>` +
+      (meta ? `<span class="rmeta">${meta}</span>` : '') +
+      (dxLine ? `<span class="rdx" dir="auto">${esc(dxLine)}</span>` : '') +
+      `<span class="pills">${pills}</span></span></button></div>`;
+  }
+  function renderListRaw() {
+    const n = state.patients.length, a = active(state.patients).length;
+    $('#count').textContent = a + ' بیمار' + (n - a ? `، ${n - a} ترخیص` : '');
+    $('#list').innerHTML = n
+      ? '<div class="group">' + state.patients.map(rowHTML).join('') + '</div><p class="hint">ردیف را به راست بکش تا ترخیص شود، به چپ تا حذف شود. تا چند ثانیه می‌توانی بازگردانی کنی.</p>'
+      : '<div class="empty"><p>هنوز بیماری ثبت نشده.</p><p>روی «بیمار جدید» بزنید و اطلاعات را بنویسید.</p></div>';
+  }
+
+  // rows glide to their new place when the order changes; the edited row briefly highlights
+  function renderList() {
+    const list = $('#list');
+    const before = new Map();
+    if (list.offsetParent !== null) list.querySelectorAll('.swrap').forEach(w => before.set(w.dataset.id, w.getBoundingClientRect().top));
+    renderListRaw();
+    if (before.size) {
+      const delay = document.body.classList.contains('sheet-open') ? 220 : 0;
+      list.querySelectorAll('.swrap').forEach(w => {
+        const o = before.get(w.dataset.id);
+        if (o === undefined) return;
+        const d = o - w.getBoundingClientRect().top;
+        if (Math.abs(d) > 1) anim(w, [{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 420, delay, fill: 'backwards' });
+      });
+    }
+    if (flashId) {
+      const el = list.querySelector(`.swrap[data-id="${flashId}"]`);
+      if (el) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+      flashId = null;
+    }
+  }
+
+  let sw = null, suppressUntil = 0;
+  const setX = (row, x) => { row.style.transform = x ? `translateX(${x}px)` : ''; };
+  const resetWrap = w => { w.classList.remove('armed'); delete w.dataset.dir; };
+  $('#list').addEventListener('pointerdown', e => {
+    const wrap = e.target.closest('.swrap');
+    if (!wrap) return;
+    sw = { wrap, row: wrap.querySelector('.row'), x0: e.clientX, y0: e.clientY, drag: false, id: e.pointerId,
+      cur: 0, startX: 0, t0: 0, armed: false, th: Math.max(96, wrap.offsetWidth * 0.3) };
+  });
+  $('#list').addEventListener('pointermove', e => {
+    if (!sw || e.pointerId !== sw.id) return;
+    const dx = e.clientX - sw.x0, dy = e.clientY - sw.y0;
+    if (!sw.drag) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        sw.drag = true;
+        sw.startX = dx;
+        sw.t0 = Date.now();
+        sw.row.classList.add('drag');
+        try { sw.row.setPointerCapture(e.pointerId); } catch (err) {}
+      } else return;
+    }
+    const w = sw.wrap.offsetWidth;
+    const a = Math.abs(dx), lim = sw.th * 1.7;
+    sw.cur = Math.sign(dx) * Math.min(w, a < lim ? a : lim + (a - lim) * 0.22);
+    setX(sw.row, sw.cur);
+    sw.wrap.dataset.dir = sw.cur > 0 ? 'right' : 'left';
+    const armed = Math.abs(sw.cur) >= sw.th;
+    if (armed !== sw.armed) { sw.armed = armed; sw.wrap.classList.toggle('armed', armed); haptic('tick'); }
+  });
+  // release past the threshold (or a fast flick) performs the action: right = discharge, left = delete
+  function endSwipe(cancel) {
+    if (!sw) return;
+    const s = sw;
+    sw = null;
+    if (!s.drag) return;
+    s.row.classList.remove('drag');
+    suppressUntil = Date.now() + 350;
+    const speed = Math.abs(s.cur - s.startX) / Math.max(1, Date.now() - s.t0);
+    const commit = !cancel && (Math.abs(s.cur) >= s.th || (Math.abs(s.cur) > 60 && speed > 0.9));
+    const id = s.wrap.dataset.id;
+    if (!commit) { setX(s.row, 0); setTimeout(() => resetWrap(s.wrap), 430); return; }
+    haptic('commit');
+    if (s.cur > 0) { setX(s.row, 0); setTimeout(() => toggleDischarge(id), 140); }
+    else {
+      const pp = get(id);
+      const label = pp && has(pp.name) ? pp.name.trim() : 'این بیمار';
+      ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود.`, 'حذف', true).then(yes => {
+        if (yes) { setX(s.row, -s.wrap.offsetWidth); setTimeout(() => collapseThen(s.wrap, () => removePatient(id)), 120); }
+        else setX(s.row, 0);
+      });
+    }
+  }
+  $('#list').addEventListener('pointerup', () => endSwipe(false));
+  $('#list').addEventListener('pointercancel', () => endSwipe(true));
+
+  function toggleDischarge(id) {
+    const p = get(id);
+    if (!p) return;
+    p.discharged = !p.discharged;
+    flashId = id;
+    flush();
+    renderList();
+    tick();
+    toast(p.discharged ? 'بیمار ترخیص شد' : 'ترخیص لغو شد', 'بازگردانی', () => {
+      p.discharged = !p.discharged;
+      flush();
+      renderCurrent();
+    });
+  }
+  function removePatient(id) {
+    const p = get(id);
+    if (!p) return;
+    const idx = state.patients.indexOf(p);
+    state.patients.splice(idx, 1);
+    flush();
+    renderList();
+    tick();
+    toast('بیمار حذف شد', 'بازگردانی', () => {
+      state.patients.splice(Math.min(idx, state.patients.length), 0, p);
+      sortPatients(state.patients);
+      flashId = p.id;
+      flush();
+      renderCurrent();
+    }, () => dropPhotos([p]));   // photos are only erased once the undo window has passed
+  }
+  $('#list').addEventListener('click', e => {
+    if (Date.now() < suppressUntil) return;
+    const r = e.target.closest('.row');
+    if (r) openSheet(r.dataset.id);
+  });
+
+  /* ---------- table (overview + history) ---------- */
+  const cell = v => has(v) ? esc(String(v).trim()) : '<span class="faint">—</span>';
+  const todoCell = list => {
+    const items = realItems(list);
+    return items.length
+      ? items.map(i => `<div class="tk${i.d ? ' d' : ''}"><span class="bx${i.d ? ' on' : ''}">${i.d ? '✓' : ''}</span>` +
+          `<span><span class="tt" dir="auto">${esc(i.t.trim())}</span>${stepsNote(i)}${has(i.c) ? `<span class="cmt" dir="auto">${esc(i.c.trim())}</span>` : ''}</span></div>`).join('')
+      : '<span class="faint">—</span>';
+  };
+  const checksCell = list => list.length
+    ? list.filter(c => has(c.w)).map(c => `<div class="ck"><b dir="auto">${esc(c.w.trim())}</b>${has(c.iv) ? ` <span dir="auto">هر ${esc(c.iv.trim())}</span>` : ''}</div>`).join('')
+    : '<span class="faint">—</span>';
+  function tableHTML(ps) {
+    return '<table><colgroup><col style="width:180px"><col style="width:120px"><col style="width:170px"><col style="width:220px">' +
+      '<col style="width:200px"><col style="width:170px"><col style="width:110px"></colgroup>' +
+      '<thead><tr><th class="first">تخت و بیمار</th><th>پزشک</th><th>تشخیص</th><th>اقدامات لازم</th>' +
+      '<th>مشاوره‌ها</th><th>چک‌ها</th><th>خلاصه پرونده</th></tr></thead><tbody>' +
+      ps.map(p =>
+        `<tr data-id="${p.id}"${p.discharged ? ' class="dis"' : ''}>` +
+        `<td class="first"><div class="in"><span class="n" dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '–'}</span>` +
+        `<span dir="auto">${has(p.name) ? esc(p.name.trim()) : '<span class="faint">بدون نام</span>'}${p.discharged ? ' <span class="tag">ترخیص</span>' : ''}</span></div></td>` +
+        `<td dir="auto">${docEmpty(p.doctor) ? '<span class="faint">—</span>' : esc(p.doctor.trim())}</td>` +
+        `<td dir="auto">${cell(p.dx)}</td><td>${todoCell(p.actions)}</td><td>${todoCell(p.consults)}</td><td>${checksCell(p.checks)}</td>` +
+        `<td class="sm">${p.discharged ? `<span class="pill ${p.summary ? 'a' : 'k'}">${p.summary ? 'نوشته شد' : 'نشده'}</span>` : '<span class="faint">—</span>'}</td></tr>`
+      ).join('') + '</tbody></table>';
+  }
+  function renderOverview() {
+    const ps = state.patients;
+    $('#stats').innerHTML = statsHTML(ps);
+    $('#tw').style.display = ps.length ? '' : 'none';
+    $('#ov-empty').style.display = ps.length ? 'none' : '';
+    $('#tw').innerHTML = ps.length ? tableHTML(ps) : '';
+  }
+  $('#tw').addEventListener('click', e => {
+    const r = e.target.closest('tr[data-id]');
+    if (r) openSheet(r.dataset.id);
+  });
+
+  /* ---------- history ---------- */
+  function renderHistory() {
+    $('#hcount').textContent = history.length + ' شیفت';
+    $('#hlist').innerHTML = history.length
+      ? '<div class="group">' + history.map(h => {
+          const open = openCount(h.patients, 'actions') + openCount(h.patients, 'consults');
+          const nosum = h.patients.filter(p => p.discharged && !p.summary).length;
+          const w = wardOf(h);
+          return `<button class="row" type="button" data-h="${h.id}"><span class="rbody">` +
+            `<span class="rname${w ? '' : ' faint'}" dir="auto">${esc(w || 'بدون نام بخش')}</span>` +
+            `<span class="rmeta"><span>${esc(dateText(h.date))}</span><span>${h.patients.length} بیمار</span></span>` +
+            ((open || nosum) ? `<span class="pills">${open ? `<span class="pill k">${open} کار باز</span>` : ''}${nosum ? `<span class="pill k">${nosum} خلاصه ناقص</span>` : ''}</span>` : '') +
+            `</span></button>`;
+        }).join('') + '</div>'
+      : '<div class="empty"><p>هنوز شیفتی در تاریخچه نیست.</p><p>شیفتی که «پایان شیفت» بزنی اینجا ذخیره می‌شود و هر وقت خواستی برمی‌گردد.</p></div>';
+  }
+  $('#hlist').addEventListener('click', e => {
+    const r = e.target.closest('.row');
+    if (r) openHistory(r.dataset.h);
+  });
+  function openHistory(id) {
+    const h = history.find(x => x.id === id);
+    if (!h) return;
+    currentH = id;
+    $('#htitle').textContent = [wardOf(h), dateText(h.date)].filter(Boolean).join('، ');
+    $('#hstats').innerHTML = statsHTML(h.patients);
+    $('#htw').innerHTML = tableHTML(h.patients);
+    $('#htw').scrollTo(0, 0);
+    $('#hsheet').classList.add('open');
+    $('#hsheet').setAttribute('aria-hidden', 'false');
+  }
+  function closeHistory() {
+    currentH = null;
+    $('#hsheet').classList.remove('open');
+    $('#hsheet').setAttribute('aria-hidden', 'true');
+  }
+  $('#hclose').addEventListener('click', closeHistory);
+
+  function doRestore(h) {
+    const cur = state.patients.filter(p => !isBlank(p));
+    if (cur.length) history.unshift({ id: uid(), endedAt: new Date().toISOString(), ward: state.shift.ward, date: state.shift.date, patients: cur });
+    history = history.filter(x => x.id !== h.id);
+    state.patients = sortPatients(h.patients.map(normalize));
+    state.shift = { ward: h.ward || '', date: h.date || jOf() };
+    flush(); flushH();
+    renderShift();
+  }
+  $('#hrestore').addEventListener('click', async () => {
+    const h = history.find(x => x.id === currentH);
+    if (!h) return;
+    const cur = state.patients.filter(p => !isBlank(p));
+    const msg = cur.length
+      ? `شیفت فعلی (${cur.length} بیمار) به تاریخچه می‌رود و این شیفت جایگزین آن می‌شود.`
+      : 'این شیفت به لیست بیماران برمی‌گردد.';
+    if (!await ask('بازگردانی این شیفت؟', msg, 'بازگردانی', false)) return;
+    doRestore(h);
+    closeHistory();
+    show('list');
+    toast('شیفت بازگردانی شد');
+  });
+  $('#hdel').addEventListener('click', async () => {
+    const h = history.find(x => x.id === currentH);
+    if (!h) return;
+    if (!await ask('حذف از تاریخچه؟', `اطلاعات ${h.patients.length} بیمار این شیفت برای همیشه حذف می‌شود.`, 'حذف', true)) return;
+    history = history.filter(x => x.id !== h.id);
+    dropPhotos(h.patients);
+    flushH();
+    closeHistory();
+    renderHistory();
+  });
+  $('#hshare').addEventListener('click', () => {
+    const h = history.find(x => x.id === currentH);
+    if (h) openShare(h.patients, h.ward, h.date);
+  });
+
+  /* ---------- check reminders (work while the app is open) ---------- */
+  const SKEY = 'shift-tracker-settings';
+  const settings = { sound: true, awake: false, next: { mode: 'carry', scope: 'pending', actions: false, consults: false, checks: false },
+    share: { on: {}, tm: { course: true, actions: true, consults: true, checks: true }, discharged: true } };
+  const alerted = new Set();
+  let firstTick = true;
+  let actx = null;
+  let wl = null;
+
+  function ivMin(iv) {
+    let s = String(iv || '').trim().toLowerCase();
+    if (!s) return 0;
+    s = s.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    const m = s.match(/^(\d+(?:[.,]\d+)?)\s*(m|min|mins|دقیقه|h|hr|hrs|hour|ساعت)?$/);
+    if (!m) return 0;
+    const n = parseFloat(m[1].replace(',', '.'));
+    return /^(h|hr|hrs|hour|ساعت)$/.test(m[2] || '') ? Math.round(n * 60) : Math.round(n);
+  }
+  function baseOf(c) {
+    let b = Math.max(c.t0 || 0, c.dn || 0);
+    c.r.forEach(r => { if ((has(r.v) || has(r.c)) && r.ts > b) b = r.ts; });
+    return b;
+  }
+  function dueOf(c) { const m = ivMin(c.iv); return m > 0 ? baseOf(c) + m * 60000 : 0; }
+  function hm(ts) {
+    const d = new Date(ts);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  function rel(ms) {
+    const m = Math.max(1, Math.round(ms / 60000));
+    if (m < 60) return `${m} دقیقه`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} ساعت و ${r} دقیقه` : `${h} ساعت`;
+  }
+  function tsFromHM(v) {
+    const m = /^(\d{1,2}):(\d{2})/.exec(v || '');
+    if (!m) return 0;
+    const d = new Date();
+    d.setHours(+m[1], +m[2], 0, 0);
+    let t = d.getTime();
+    if (t > Date.now() + 10 * 60000) t -= 86400000;   // a time later than now means last night
+    return t;
+  }
+  function dueLine(c) {
+    const d = dueOf(c);
+    if (!d) return '';
+    const ms = d - Date.now();
+    return `<div class="cdue${ms <= 0 ? ' od' : ''}"><span>بعدی ${hm(d)}</span><span>${ms <= 0 ? rel(-ms) + ' دیرکرد' : 'تا ' + rel(ms) + ' دیگر'}</span></div>`;
+  }
+  function dueList() {
+    const out = [];
+    state.patients.forEach(p => {
+      if (p.discharged) return;
+      p.checks.forEach(c => { const d = dueOf(c); if (d) out.push({ p, c, due: d }); });
+    });
+    return out.sort((a, b) => a.due - b.due);
+  }
+
+  function unlockAudio() {
+    try {
+      if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+      if (actx && actx.state === 'suspended') actx.resume();
+    } catch (e) {}
+  }
+  ['click', 'touchend'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
+  function beep() {
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+    if (!actx || !settings.sound) return;
+    const t = actx.currentTime;
+    [0, 0.3, 0.6].forEach(o => {
+      const os = actx.createOscillator(), g = actx.createGain();
+      os.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t + o);
+      g.gain.exponentialRampToValueAtTime(0.4, t + o + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + o + 0.24);
+      os.connect(g); g.connect(actx.destination);
+      os.start(t + o); os.stop(t + o + 0.26);
+    });
+  }
+  function updateBadge(n) {
+    const el = $('#rembadge');
+    const changed = String(n) !== el.textContent;
+    el.hidden = !n;
+    el.textContent = n;
+    if (n && changed) anim(el, [{ transform: 'scale(.4)' }, { transform: 'scale(1.25)', offset: .6 }, { transform: 'scale(1)' }], { duration: 420, easing: SPRING });
+  }
+  function tick() {
+    const now = Date.now();
+    const over = dueList().filter(x => x.due <= now);
+    updateBadge(over.length);
+    if (!toastExpire) {   // don't replace a pending "undo delete" message
+      const fresh = over.filter(x => !alerted.has(x.c.id + '|' + x.due));
+      if (fresh.length) {
+        fresh.forEach(x => alerted.add(x.c.id + '|' + x.due));
+        const names = fresh.slice(0, 3).map(x => `${x.c.w.trim()} تخت ${has(x.p.bed) ? x.p.bed.trim() : '؟'}`).join('، ');
+        toast(firstTick ? `${over.length} چک دیرکرد دارد` : (fresh.length === 1 ? `موعد چک: ${names}` : `${fresh.length} چک موعد رسید: ${names}`), 'مشاهده', () => show('rem'));
+        beep();
+      }
+    }
+    firstTick = false;
+    if (view === 'rem' && !$('#sheet').classList.contains('open')) renderRem();
+  }
+  function renderRem() {
+    const now = Date.now();
+    const list = dueList();
+    $('#remcount').textContent = list.length ? `${list.length} چک زمان‌دار` : '';
+    const note = '<p class="hint">صدا و هشدار فقط وقتی برنامه باز است کار می‌کند.</p>';
+    $('#rlist').innerHTML = list.length
+      ? '<div class="group">' + list.map(x => {
+          const ms = x.due - now, od = ms <= 0, p = x.p, c = x.c;
+          return `<div class="rem${od ? ' od' : ''}" data-pid="${p.id}" data-cid="${c.id}">` +
+            `<div class="rtop"><span class="bedbadge"><small>تخت</small><b dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '—'}</b></span><span class="rbody">` +
+            `<span class="rname" dir="auto">${has(p.name) ? esc(p.name.trim()) : 'بدون نام'}</span>` +
+            `<span class="rmeta"><b dir="auto">${esc(c.w.trim())}</b><span>هر ${esc(c.iv.trim())}</span></span>` +
+            `<span class="due"><span>موعد ${hm(x.due)}</span><span>${od ? rel(-ms) + ' دیرکرد' : 'تا ' + rel(ms) + ' دیگر'}</span></span>` +
+            `</span></div><div class="racts"><button class="btn" type="button" data-act="res">ثبت نتیجه</button>` +
+            `<button class="btn primary" type="button" data-act="done">انجام شد</button></div></div>`;
+        }).join('') + '</div>' + note
+      : '<div class="empty"><p>هنوز چکی با فاصله زمانی نداریم.</p><p>در فرم بیمار، برای هر چک یک فاصله (مثلاً 1h) انتخاب کن تا اینجا یادآوری شود.</p></div>' + note;
+  }
+  $('#rlist').addEventListener('click', e => {
+    const box = e.target.closest('.rem');
+    if (!box) return;
+    const p = get(box.dataset.pid);
+    const c = p && p.checks.find(x => x.id === box.dataset.cid);
+    if (!c) return;
+    const b = e.target.closest('[data-act]');
+    if (b && b.dataset.act === 'done') {
+      c.dn = Date.now();
+      flush();
+      renderRem();
+      tick();
+      toast('ثبت شد؛ چک بعدی از الان حساب می‌شود');
+    } else if (b) {                       // record a result now
+      openSheet(p.id, 'act');
+      const r = newResult(c);
+      c.r.push(r);
+      renderChecks();
+      const inp = $(`#t-checks .res[data-id="${r.id}"] .rv, #t-checks .res[data-id="${r.id}"] .vsf`);
+      if (inp) { inp.focus(); inp.scrollIntoView({ block: 'center' }); }
+      queueSave();
+    } else if (e.target.closest('.rtop')) {   // open the patient at this check
+      openSheet(p.id, 'act');
+      const el = $(`#t-checks .chk[data-id="${c.id}"]`);
+      if (el) el.scrollIntoView({ block: 'center' });
+    }
+  });
+
+  function syncOpts() {
+    $('#opt-sound').setAttribute('aria-pressed', String(settings.sound));
+    $('#opt-awake').setAttribute('aria-pressed', String(settings.awake));
+  }
+  async function setAwake(on, silent) {
+    try {
+      if (!('wakeLock' in navigator)) throw new Error('unsupported');
+      if (on) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
+      else if (wl) { await wl.release(); wl = null; }
+    } catch (e) {
+      if (on) { settings.awake = false; syncOpts(); if (!silent) toast('روشن نگه داشتن صفحه در این مرورگر ممکن نیست'); }
+    }
+  }
+  $('#opt-sound').addEventListener('click', () => {
+    settings.sound = !settings.sound;
+    unlockAudio();
+    if (settings.sound) beep();
+    syncOpts();
+    store.save(SKEY, settings);
+  });
+  $('#opt-awake').addEventListener('click', async () => {
+    settings.awake = !settings.awake;
+    syncOpts();
+    await setAwake(settings.awake);
+    store.save(SKEY, settings);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { tick(); if (settings.awake && !wl) setAwake(true, true); }
+  });
+
+  /* ---------- small timestamps (shown on touch, always in the report) ---------- */
+  const showTm = new Set();   // sections whose times are currently visible: actions / consults / checks
+  function stamp(ts) {
+    if (!ts) return '';
+    const j = jOf(new Date(ts));
+    return `${j.d} ${MONTHS[j.m - 1]}${j.y !== jOf().y ? ' ' + j.y : ''} ${hm(ts)}`;
+  }
+  const tmLine = (a, b) => (a || b)
+    ? `<div class="tmline">${a ? `<span>اضافه شد ${stamp(a)}</span>` : ''}${b ? `<span>انجام شد ${stamp(b)}</span>` : ''}</div>` : '';
+  function tmTxt(a, b) {
+    const parts = [];
+    if (a) parts.push('اضافه شد ' + stamp(a));
+    if (b) parts.push('انجام شد ' + stamp(b));
+    return parts.length ? ' [' + parts.join('، ') + ']' : '';
+  }
+
+  /* ---------- tabs ---------- */
+  function renderCurrent() {
+    if (view === 'ov') renderOverview();
+    else if (view === 'hist') renderHistory();
+    else if (view === 'rem') renderRem();
+    else renderList();
+    tick();
+  }
+  function show(v) {
+    view = v;
+    document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.v === v)));
+    renderCurrent();
+    staggerIn(v);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => show(t.dataset.v)));
+
+  /* ---------- shift info sheet (ward + Jalali date) ---------- */
+  function fillDateSelects() {
+    const dt = state.shift.date;
+    const now = jOf().y;
+    const y0 = Math.min(now - 2, dt.y), y1 = Math.max(now + 1, dt.y);
+    let ys = '';
+    for (let y = y0; y <= y1; y++) ys += `<option value="${y}">${y}</option>`;
+    $('#d-year').innerHTML = ys;
+    $('#d-mon').innerHTML = MONTHS.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('');
+    let ds = '';
+    for (let d = 1; d <= dim(dt.y, dt.m); d++) ds += `<option value="${d}">${d}</option>`;
+    $('#d-day').innerHTML = ds;
+    $('#d-year').value = dt.y; $('#d-mon').value = dt.m; $('#d-day').value = dt.d;
+  }
+  function renderWardChips() {
+    const cur = wardOf(state.shift);
+    const list = [...new Set([cur, ...history.map(wardOf)].filter(Boolean))].slice(0, 8);
+    $('#wchips').innerHTML = list.map(w => `<button class="chip" type="button" data-w="${esc(w)}" aria-pressed="${w === cur}">${esc(w)}</button>`).join('');
+  }
+  function openShift() {
+    $('#w-ward').value = state.shift.ward || '';
+    renderWardChips();
+    fillDateSelects();
+    $('#msheet').classList.add('open');
+    $('#msheet').setAttribute('aria-hidden', 'false');
+    staggerForm('#msheet .form');
+  }
+  function closeShift() {
+    $('#msheet').classList.remove('open');
+    $('#msheet').setAttribute('aria-hidden', 'true');
+    if (document.activeElement) document.activeElement.blur();
+    flush();
+    renderShift();
+  }
+  function readDate() {
+    const y = +$('#d-year').value, m = +$('#d-mon').value;
+    const d = Math.min(+$('#d-day').value, dim(y, m));
+    state.shift.date = { y, m, d };
+    fillDateSelects();
+    renderShift();
+    queueSave();
+  }
+  document.querySelectorAll('.shiftchip').forEach(c => c.addEventListener('click', openShift));
+  $('#mdone').addEventListener('click', closeShift);
+  $('#w-ward').addEventListener('input', e => {
+    state.shift.ward = e.target.value;
+    renderWardChips();
+    renderShift();
+    queueSave();
+  });
+  $('#wchips').addEventListener('click', e => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    state.shift.ward = b.dataset.w;
+    $('#w-ward').value = b.dataset.w;
+    renderWardChips();
+    renderShift();
+    queueSave();
+  });
+  ['#d-day', '#d-mon', '#d-year'].forEach(s => $(s).addEventListener('change', readDate));
+  $('#d-today').addEventListener('click', () => { state.shift.date = jOf(); fillDateSelects(); renderShift(); queueSave(); });
+
+  /* ---------- patient editor: rendering helpers ---------- */
+  const growAny = el => {
+    const min = el.classList.contains('tt') ? 46 : el.classList.contains('ct') ? 44 : el.classList.contains('cm') ? 40 : 92;
+    el.style.height = 'auto';
+    el.style.height = Math.max(min, el.scrollHeight + (min === 92 ? 2 : 0)) + 'px';
+  };
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  const ICON_CM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4V5z"/></svg>';
+  const cmVisible = o => has(o.c) || openCm.has(o.id);
+  const cmBox = (o, extra) => cmVisible(o)
+    ? `<textarea class="cm ${extra || ''}" data-cid="${o.id}" rows="1" dir="auto" spellcheck="false" placeholder="کامنت">${esc(o.c)}</textarea>` : '';
+  const growAll = box => box.querySelectorAll('textarea').forEach(growAny);
+
+  function findById(p, id) {
+    for (const k of LISTS) { const it = p[k].find(x => x.id === id); if (it) return it; }
+    for (const c of p.checks) {
+      if (c.id === id) return c;
+      const r = c.r.find(x => x.id === id);
+      if (r) return r;
+    }
+    return null;
+  }
+  function focusCm(id) {
+    const el = $(`#form textarea.cm[data-cid="${id}"]`);
+    if (el) { el.focus(); anim(el, [{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 240 }); }
+  }
+  function toggleCm(o) {
+    if (cmVisible(o)) { if (!has(o.c)) openCm.delete(o.id); return false; }
+    openCm.add(o.id);
+    return true;
+  }
+
+  /* todo lists (actions / consults) */
+  // consults: a service, a reason, and four small steps; done when all four are ticked
+  const STEPS = ['برگه مشاوره نوشته شد', 'تماس گرفته شد', 'مشاوره انجام شد', 'مشاوره reorder شد'];
+  const STEPS_SHORT = ['برگه', 'تماس', 'انجام', 'reorder'];
+  const consultT = i => (has(i.svc) || has(i.why))
+    ? 'مشاوره' + (has(i.svc) ? ' با سرویس ' + i.svc.trim() : '') + (has(i.why) ? ' برای بررسی از جهت ' + i.why.trim() : '') : '';
+  const stepsNote = i => (i.st && !i.d)
+    ? `<span class="cmt">مانده: ${STEPS_SHORT.filter((n, k) => !i.st[k]).map(esc).join('، ')}</span>` : '';
+  const stepsTxt = i => i.st ? ' [' + STEPS_SHORT.map((n, k) => n + (i.st[k] ? ' ✓' : ' ✗')).join('، ') + ']' : '';
+  function consultHTML(it) {
+    const st = it.st || [false, false, false, false];
+    return `<div class="task cons${it.d ? ' done' : ''}" data-id="${it.id}">` +
+      `<div class="crow"><span class="clab">مشاوره با سرویس</span>` +
+      `<input class="cin cs" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" value="${esc(it.svc)}">` +
+      `<button class="tcm${has(it.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
+      `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>` +
+      `<div class="crow"><span class="clab">برای بررسی از جهت</span>` +
+      `<input class="cin cw" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(it.why)}"></div>` +
+      `<div class="csteps">${STEPS.map((n, k) => `<button class="cstep" type="button" role="checkbox" data-s="${k}" aria-checked="${!!st[k]}"><span class="sb">${CHECK}</span>${n}</button>`).join('')}</div>` +
+      cmBox(it) + (showTm.has('consults') ? tmLine(it.at, it.dt) : '') + `</div>`;
+  }
+  function toggleStep(it, k, el, btn) {
+    if (!it.st) it.st = [false, false, false, false];
+    it.st[k] = !it.st[k];
+    const was = it.d;
+    it.d = it.st.every(Boolean);
+    if (it.d !== was) it.dt = it.d ? Date.now() : 0;
+    btn.setAttribute('aria-checked', String(it.st[k]));
+    el.classList.toggle('done', it.d);
+    popEl(btn.querySelector('.sb'));
+    haptic(it.d ? 'commit' : 'tick');
+    if (showTm.has('consults')) renderTodos('consults');
+    queueSave();
+  }
+  const normConsults = v => normItems(v).map((i, k) => {
+    const src = Array.isArray(v) ? (v[k] || {}) : {};
+    const o = Object.assign({}, i, {
+      svc: src.svc !== undefined ? String(src.svc) : i.t,       // old free-text consults keep their text as the service
+      why: String(src.why || ''),
+      st: Array.isArray(src.st) ? [0, 1, 2, 3].map(n => !!src.st[n]) : (i.d ? [true, true, true, true] : [false, false, false, false])
+    });
+    o.t = consultT(o);
+    o.d = o.st.every(Boolean);
+    return o;
+  });
+
+  function todoHTML(it, key) {
+    if (key === 'consults') return consultHTML(it);
+    return `<div class="task${it.d ? ' done' : ''}" data-id="${it.id}"><div class="trow">` +
+      `<button class="tick" type="button" role="checkbox" aria-checked="${it.d}" aria-label="انجام شد"><span>${CHECK}</span></button>` +
+      `<textarea class="tt" rows="1" dir="auto" spellcheck="false" enterkeyhint="next">${esc(it.t)}</textarea>` +
+      `<button class="tcm${has(it.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
+      `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>${cmBox(it)}${showTm.has(key) ? tmLine(it.at, it.dt) : ''}</div>`;
+  }
+  function renderTodos(key) {
+    const p = get(current);
+    const box = $('#t-' + key);
+    box.innerHTML = p[key].map(it => todoHTML(it, key)).join('');
+    growAll(box);
+  }
+  function addTodo(key, afterId) {
+    const p = get(current);
+    const F = key === 'consults' ? '.cs' : '.tt';
+    const last = p[key][p[key].length - 1];
+    if (!afterId && last && !has(last.t)) { const f0 = $(`#t-${key} .task[data-id="${last.id}"] ${F}`); if (f0) f0.focus(); return; }
+    const item = { id: uid(), t: '', d: false, c: '', at: Date.now(), dt: 0 };
+    if (key === 'consults') Object.assign(item, { svc: '', why: '', st: [false, false, false, false] });
+    const i = afterId ? p[key].findIndex(x => x.id === afterId) : -1;
+    if (i >= 0) p[key].splice(i + 1, 0, item); else p[key].push(item);
+    renderTodos(key);
+    const f = $(`#t-${key} .task[data-id="${item.id}"] ${F}`);
+    if (f) f.focus();
+    anim(f && f.closest('.task'), [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300 });
+    queueSave();
+  }
+
+  /* checks: what / interval / results */
+  const VS = [['hr', 'HR', 'decimal'], ['rr', 'RR', 'decimal'], ['bp', 'BP', 'text'], ['t', 'T', 'decimal'], ['spo2', 'SpO2', 'decimal']];
+  const isVital = c => /vital|علائم حیاتی/i.test(c.w || '');
+  const vsText = vs => VS.filter(([k]) => vs && has(vs[k])).map(([k, l]) => `${l} ${String(vs[k]).trim()}`).join('، ');
+  const newResult = c => { const r = { id: uid(), tm: nowHM(), ts: Date.now(), v: '', c: '' }; if (isVital(c)) r.vs = {}; return r; };
+  function resHTML(r, c) {
+    const structured = !!c && isVital(c) && (!!r.vs || !has(r.v));   // vital-sign results come with HR / RR / BP / T / SpO2 ready to fill
+    const time = `<input class="inp rtm" type="time" value="${esc(r.tm)}" aria-label="ساعت">`;
+    const first = structured ? time + '<span class="rsp"></span>'
+      : time + `<input class="inp rv" dir="auto" placeholder="نتیجه" autocomplete="off" spellcheck="false" value="${esc(r.v)}">`;
+    const grid = structured
+      ? `<div class="vsg">${VS.map(([k, l, m]) => `<label class="vsl"><span>${l}</span><input class="inp vsf" data-k="${k}" inputmode="${m}" dir="ltr" autocomplete="off" spellcheck="false" value="${esc((r.vs || {})[k] || '')}"></label>`).join('')}</div>` : '';
+    return `<div class="res" data-id="${r.id}"><div class="rrow">${first}` +
+      `<button class="tcm${has(r.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
+      `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>${grid}${cmBox(r)}` +
+      `${showTm.has('checks') && r.ts ? `<div class="tmline"><span>ثبت شد ${stamp(r.ts)}</span></div>` : ''}</div>`;
+  }
+
+  function chkHTML(c) {
+    const custom = has(c.iv) && !IVS.includes(c.iv);
+    const other = custom || ivOther.has(c.id);
+    const opts = '<option value="">بدون فاصله</option>' +
+      IVS.map(v => `<option value="${v}"${c.iv === v ? ' selected' : ''}>هر ${v}</option>`).join('') +
+      `<option value="__other"${other ? ' selected' : ''}>سایر…</option>`;
+    return `<div class="chk" data-id="${c.id}"><div class="chead"><span class="cname" dir="auto">${esc(c.w)}</span>` +
+      `<select class="inp civ" aria-label="فاصله زمانی">${opts}</select>` +
+      `<button class="tcm${has(c.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
+      `<button class="tdel" type="button" aria-label="حذف چک">${CROSS}</button></div>` +
+      (other ? `<input class="inp civo" dir="auto" placeholder="فاصله (مثلاً 45m)" autocomplete="off" spellcheck="false" value="${esc(custom ? c.iv : '')}">` : '') +
+      cmBox(c) +
+      (showTm.has('checks') ? tmLine(c.t0, c.dn) : '') + dueLine(c) +
+      `<div class="reslbl">نتایج</div><div class="results">${c.r.map(r => resHTML(r, c)).join('')}</div>` +
+      `<button class="addres" type="button">+ ثبت نتیجه (ساعت الان)</button></div>`;
+  }
+  function renderChecks() {
+    const p = get(current);
+    const box = $('#t-checks');
+    box.innerHTML = p.checks.map(chkHTML).join('');
+    growAll(box);
+  }
+  function openPicker() {
+    $('#pkchips').innerHTML = PRESETS.map(w => `<button class="chip" type="button" data-w="${esc(w)}">${esc(w)}</button>`).join('');
+    $('#pkin').value = '';
+    $('#pk').classList.add('show');
+  }
+  const closePicker = () => $('#pk').classList.remove('show');
+  function addCheck(w) {
+    const p = get(current);
+    if (!p || !has(w)) return;
+    const c = { id: uid(), w: w.trim(), iv: '', c: '', t0: Date.now(), dn: 0, r: [] };
+    p.checks.push(c);
+    closePicker();
+    renderChecks();
+    queueSave();
+    const el = $(`#t-checks .chk[data-id="${c.id}"]`);
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); anim(el, [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 340 }); }
+  }
+  $('#pkchips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) addCheck(b.dataset.w); });
+  $('#pkadd').addEventListener('click', () => addCheck($('#pkin').value));
+  $('#pkin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCheck($('#pkin').value); } });
+  $('#pkclose').addEventListener('click', closePicker);
+  $('#pk').addEventListener('click', e => { if (e.target === $('#pk')) closePicker(); });
+
+  /* photos */
+  async function renderPhotos() {
+    const p = get(current);
+    if (!p) return;
+    const box = $('#photos');
+    box.innerHTML = p.photos.map(ph => `<button class="ph" type="button" data-pid="${ph.id}" aria-label="نمایش عکس"><img alt="" draggable="false"></button>`).join('');
+    for (const ph of p.photos) {
+      const img = box.querySelector(`.ph[data-pid="${ph.id}"] img`);
+      const u = await photoURL(ph.id);
+      if (img && u) { img.onerror = () => img.closest('.ph').classList.add('bad'); img.src = u; anim(img, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 }); }
+      else if (img) img.closest('.ph').classList.add('bad');
+    }
+  }
+  async function addPhotos(files) {
+    const p = get(current);
+    if (!p) return;
+    flush();
+    let ok = 0, failed = 0, lastErr = '';
+    toast(files.length > 1 ? 'در حال ذخیره عکس‌ها…' : 'در حال ذخیره عکس…');
+    for (const f of files) {
+      let stage = 'read';
+      try {
+        let b;
+        try { b = await withTimeout(compress(f), 15000, 'compress'); } catch (e) { b = f; }   // keep the original if it can't be re-encoded
+        stage = 'save';
+        const id = uid();
+        await photoStore.put(id, b);
+        stage = 'verify';
+        const vb = await photoStore.get(id);
+        if (!vb) throw new Error('empty');
+        stage = 'encode';
+        if (!(await blobToDataURL(vb))) throw new Error('encode');
+        p.photos.push({ id });
+        ok++;
+      } catch (e) { failed++; lastErr = stage + ':' + ((e && (e.name || e.message)) || 'error'); }
+    }
+    queueSave();
+    if (get(current) === p) await renderPhotos();
+    if (failed) toast(`افزودن ${failed} عکس ناموفق بود (${lastErr})`);
+    else if (!photoStore.ok) toast('عکس ذخیره شد؛ در این محیط فقط تا بستن صفحه می‌ماند');
+    else toast(ok > 1 ? `${ok} عکس ذخیره شد` : 'عکس ذخیره شد');
+  }
+  $('#phcam').addEventListener('click', () => { flush(); $('#fcam').click(); });
+  $('#phgal').addEventListener('click', () => { flush(); $('#fgal').click(); });
+  ['#fcam', '#fgal'].forEach(sel => $(sel).addEventListener('change', e => {
+    const input = e.target;
+    const files = [...input.files];
+    if (!files.length) return;
+    addPhotos(files).finally(() => { input.value = ''; });
+  }));
+  let lbId = null;
+  async function openLB(id) {
+    lbId = id;
+    lbResetZoom(false);
+    $('#lbimg').src = await photoURL(id);
+    $('#lb').classList.add('show');
+  }
+  const closeLB = () => { $('#lb').classList.remove('show'); setTimeout(() => { if (!$('#lb').classList.contains('show')) { $('#lbimg').removeAttribute('src'); lbResetZoom(false); } }, 320); lbId = null; };
+  $('#lbclose').addEventListener('click', closeLB);
+  $('#lbdel').addEventListener('click', async () => {
+    const p = get(current);
+    if (!p || !lbId) return;
+    if (!await ask('حذف عکس؟', 'این عکس از اطلاعات بیمار حذف می‌شود.', 'حذف', true)) return;
+    p.photos = p.photos.filter(x => x.id !== lbId);
+    if (!photoInUse(lbId)) {
+      photoStore.del(lbId);
+      if (urls.has(lbId)) { URL.revokeObjectURL(urls.get(lbId)); urls.delete(lbId); }
+    }
+    closeLB();
+    queueSave();
+    renderPhotos();
+  });
+
+  /* ---------- patient editor: fields ---------- */
+  const grow = el => { el.style.height = 'auto'; el.style.height = Math.max(92, el.scrollHeight + 2) + 'px'; };
+  (function buildAgeOptions() {
+    let y = '<option value="">—</option>';
+    for (let n = 0; n <= 110; n++) y += `<option value="${n}">${n} سال</option>`;
+    $('#f-ageY').innerHTML = y;
+    let m = '<option value="">—</option>';
+    for (let n = 0; n <= 11; n++) m += `<option value="${n}">${n} ماه</option>`;
+    $('#f-ageM').innerHTML = m;
+  })();
+  function buildBedOptions(p) {
+    const used = new Set(state.patients.filter(x => x !== p).map(x => String(x.bed || '').trim()).filter(Boolean));
+    let h = '<option value="">—</option>';
+    for (let n = 1; n <= BEDS; n++) h += `<option value="${n}">${n}${used.has(String(n)) ? ' (پر)' : ''}</option>`;
+    h += '<option value="__other">سایر…</option>';
+    $('#f-bed').innerHTML = h;
+  }
+  function showBed(p) {
+    const b = String(p.bed || '').trim();
+    const inList = /^([1-9]|[1-5]\d|60)$/.test(b);
+    if (!b) { $('#f-bed').value = ''; $('#bed-other-wrap').hidden = true; }
+    else if (inList) { $('#f-bed').value = b; $('#bed-other-wrap').hidden = true; }
+    else { $('#f-bed').value = '__other'; $('#bed-other-wrap').hidden = false; $('#f-bed-other').value = b; }
+  }
+  function updateTitle(p) {
+    const bed = has(p.bed) ? 'تخت ' + p.bed.trim() : '';
+    const nm = has(p.name) ? p.name.trim() : '';
+    $('#stitle').textContent = [bed, nm].filter(Boolean).join(' - ') || 'بیمار جدید';
+  }
+  function syncDischarge(p) {
+    $('#dcodeRow').hidden = !p.discharged;
+    $('#f-drugCode').value = p.drugCode || '';
+    $('#dischg').setAttribute('aria-checked', String(p.discharged));
+    $('#sum').hidden = !p.discharged;
+    $('#sum').setAttribute('aria-checked', String(p.summary));
+  }
+  function updateSeg(sex) {
+    document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === sex)));
+  }
+  function updateNext(p) {
+    $('#next').disabled = state.patients.indexOf(p) === state.patients.length - 1 && isBlank(p);
+  }
+  function fill() {
+    const p = get(current);
+    if (!p) return;
+    buildBedOptions(p);
+    showBed(p);
+    ['name','doctor','mrn','hx','dx','notes'].forEach(f => { $('#f-' + f).value = p[f] || ''; });
+    $('#f-ageY').value = p.ageY; $('#f-ageM').value = p.ageM;
+    updateSeg(p.sex);
+    syncDischarge(p);
+    syncRoutine(p);
+    LISTS.forEach(renderTodos);
+    renderChecks();
+    document.querySelectorAll('.tmbtn').forEach(b => b.setAttribute('aria-pressed', String(showTm.has(b.dataset.tm))));
+    renderPhotos();
+    const i = state.patients.indexOf(p);
+    updateTitle(p);
+    $('#prev').disabled = i === 0;
+    updateNext(p);
+    renderCourse();
+    showPane(curPane, false);
+    $('#form').scrollTop = 0;
+  }
+  function openSheet(id, pane) {
+    current = id;
+    curPane = pane || 'act';
+    fill();
+    $('#sheet').classList.add('open');
+    $('#sheet').setAttribute('aria-hidden', 'false');
+    staggerForm('#form');
+  }
+  function closeSheet() {
+    const p = get(current);
+    if (p) {
+      if (docEmpty(p.doctor)) p.doctor = DOC;
+      prune(p);
+      if (isBlank(p)) state.patients = state.patients.filter(x => x !== p);
+    }
+    sortPatients(state.patients);
+    if (p && view === 'list' && state.patients.includes(p)) flashId = p.id;
+    current = null;
+    openCm.clear(); ivOther.clear();
+    closeLB(); closePicker();
+    $('#sheet').classList.remove('open');
+    $('#sheet').setAttribute('aria-hidden', 'true');
+    if (document.activeElement) document.activeElement.blur();
+    flush();
+    renderCurrent();
+  }
+  function addPatient() {
+    const p = blank();
+    state.patients.push(p);
+    queueSave();
+    openSheet(p.id, 'info');   // a brand-new patient starts on the info tab
+  }
+  function go(d) {
+    const cur = get(current);
+    prune(cur);
+    const i = state.patients.indexOf(cur);
+    let target = state.patients[i + d];
+    if (!target && d > 0 && !isBlank(cur)) {
+      target = blank();
+      state.patients.push(target);
+    }
+    if (!target) return;
+    if (isBlank(cur)) state.patients = state.patients.filter(x => x !== cur);
+    current = target.id;
+    if (isBlank(target)) curPane = 'info';
+    openCm.clear(); ivOther.clear();
+    fill();
+    anim($('#form'), [{ opacity: 0, transform: `translateY(${d > 0 ? 16 : -16}px)` }, { opacity: 1, transform: 'none' }], { duration: 300 });
+    queueSave();
+    if (isBlank(target)) $('#f-name').focus({ preventScroll: true });
+  }
+
+  /* ---------- patient editor: events ---------- */
+  $('#form').addEventListener('input', e => {
+    const t = e.target;
+    const p = get(current);
+    if (!p) return;
+    const cl = t.classList;
+    if (t.id === 'f-bed-other') {
+      p.bed = t.value;
+      updateTitle(p);
+    } else if (t.dataset && t.dataset.f) {
+      p[t.dataset.f] = t.value;
+      if (t.dataset.f === 'name') updateTitle(p);
+      if (t.tagName === 'TEXTAREA') grow(t);
+    } else if (cl.contains('tt')) {
+      const key = t.closest('.tasks').dataset.key;
+      const it = p[key].find(x => x.id === t.closest('.task').dataset.id);
+      if (it) it.t = t.value;
+      growAny(t);
+    } else if (cl.contains('cm')) {
+      const o = findById(p, t.dataset.cid);
+      if (o) o.c = t.value;
+      growAny(t);
+    } else if (cl.contains('cin')) {
+      const it = p.consults.find(x => x.id === t.closest('.task').dataset.id);
+      if (it) { if (cl.contains('cs')) it.svc = t.value; else it.why = t.value; it.t = consultT(it); }
+    } else if (cl.contains('ct')) {
+      const en = p.course.find(x => x.id === t.closest('.ce').dataset.id);
+      if (en) {
+        en.t = t.value;
+        if (!en.man) en.ts = Date.now();   // every edit re-stamps the entry
+        const st = t.closest('.ce').querySelector('.cst');
+        if (st) st.textContent = '[' + stampBr(en.ts) + ']';
+      }
+      growAny(t);
+    } else if (cl.contains('civo')) {
+      const c = p.checks.find(x => x.id === t.closest('.chk').dataset.id);
+      if (c) c.iv = t.value;
+    } else if (cl.contains('vsf')) {
+      const c = p.checks.find(x => x.id === t.closest('.chk').dataset.id);
+      const r = c && c.r.find(x => x.id === t.closest('.res').dataset.id);
+      if (r) { r.vs = r.vs || {}; r.vs[t.dataset.k] = t.value; r.v = vsText(r.vs); if (!r.ts) r.ts = Date.now(); }
+    } else if (cl.contains('rtm') || cl.contains('rv')) {
+      const c = p.checks.find(x => x.id === t.closest('.chk').dataset.id);
+      const r = c && c.r.find(x => x.id === t.closest('.res').dataset.id);
+      if (r) { if (cl.contains('rtm')) { r.tm = t.value; r.ts = tsFromHM(t.value) || r.ts; } else { r.v = t.value; if (!r.ts) r.ts = Date.now(); } }
+    } else return;
+    updateNext(p);
+    queueSave();
+  });
+  $('#form').addEventListener('change', e => {
+    const t = e.target;
+    const p = get(current);
+    if (!p) return;
+    if (t.id === 'f-bed') {
+      if (t.value === '__other') {
+        p.bed = '';
+        $('#bed-other-wrap').hidden = false;
+        $('#f-bed-other').value = '';
+        $('#f-bed-other').focus();
+      } else {
+        p.bed = t.value;
+        $('#bed-other-wrap').hidden = true;
+      }
+      updateTitle(p);
+    } else if (t.classList.contains('civ')) {
+      const c = p.checks.find(x => x.id === t.closest('.chk').dataset.id);
+      if (!c) return;
+      if (t.value === '__other') {
+        ivOther.add(c.id);
+        if (IVS.includes(c.iv)) c.iv = '';
+        renderChecks();
+        const inp = $(`#t-checks .chk[data-id="${c.id}"] .civo`);
+        if (inp) inp.focus();
+      } else {
+        ivOther.delete(c.id);
+        c.iv = t.value;
+        renderChecks();
+      }
+    } else if (t.tagName === 'SELECT' && t.dataset.f) {
+      p[t.dataset.f] = t.value;
+    } else return;
+    updateNext(p);
+    queueSave();
+  });
+  // doctor field always starts with "دکتر"
+  $('#form').addEventListener('focusin', e => {
+    if (e.target.id === 'f-doctor') {
+      const el = e.target;
+      setTimeout(() => { try { el.setSelectionRange(el.value.length, el.value.length); } catch (err) {} }, 0);
+    }
+  });
+  $('#form').addEventListener('focusout', e => {
+    if (e.target.id === 'f-doctor' && !has(e.target.value)) {
+      e.target.value = DOC;
+      const p = get(current);
+      if (p) { p.doctor = DOC; queueSave(); }
+    }
+  });
+  // Enter = next to-do, Backspace on empty = remove
+  $('#form').addEventListener('keydown', e => {
+    const t = e.target;
+    if (!t.classList || !t.classList.contains('tt')) return;
+    const key = t.closest('.tasks').dataset.key;
+    const p = get(current);
+    const id = t.closest('.task').dataset.id;
+    const it = p[key].find(x => x.id === id);
+    if (!it) return;
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (has(it.t)) addTodo(key, id);
+    } else if (e.key === 'Backspace' && !t.value) {
+      e.preventDefault();
+      const i = p[key].indexOf(it);
+      p[key].splice(i, 1);
+      renderTodos(key);
+      const prev = p[key][i - 1];
+      if (prev) { const ta = $(`#t-${key} .task[data-id="${prev.id}"] .tt`); if (ta) ta.focus(); }
+      queueSave();
+    }
+  });
+  $('#form').addEventListener('click', async e => {
+    const p = get(current);
+    if (!p) return;
+    const t = e.target;
+    const tmb = t.closest('.tmbtn');
+    if (tmb) {
+      const k = tmb.dataset.tm;
+      if (showTm.has(k)) showTm.delete(k); else showTm.add(k);
+      tmb.setAttribute('aria-pressed', String(showTm.has(k)));
+      if (k === 'checks') renderChecks(); else renderTodos(k);
+      return;
+    }
+    const add = t.closest('[data-add]');
+    if (add) { addTodo(add.dataset.add); return; }
+    if (t.closest('#addchk')) { openPicker(); return; }
+    const rt = t.closest('[data-rt]');
+    if (rt) {
+      const k = rt.dataset.rt;
+      p.rt = p.rt || { hx: 0, dn: 0, pc: 0 };
+      p.rt[k] = rtDone(p, k) ? 0 : Date.now();
+      syncRoutine(p);
+      popEl(rt.querySelector('.cb'));
+      haptic('tick');
+      updateNext(p);
+      queueSave();
+      return;
+    }
+    const dg = t.closest('#dischg');
+    if (dg) { p.discharged = !p.discharged; syncDischarge(p); popEl(dg.querySelector('.cb')); haptic('tick'); updateNext(p); queueSave(); return; }
+    const sum = t.closest('#sum');
+    if (sum) { p.summary = !p.summary; sum.setAttribute('aria-checked', String(p.summary)); popEl(sum.querySelector('.cb')); haptic('tick'); updateNext(p); queueSave(); return; }
+    const seg = t.closest('#seg button');
+    if (seg) { p.sex = p.sex === seg.dataset.s ? '' : seg.dataset.s; updateSeg(p.sex); updateNext(p); queueSave(); return; }
+    const ph = t.closest('.ph');
+    if (ph) { openLB(ph.dataset.pid); return; }
+    const cts = t.closest('.cst');
+    if (cts) { const en = p.course.find(x => x.id === cts.closest('.ce').dataset.id); if (en) openTs(en); return; }
+    if (t.closest('[data-addc]')) { addCourse(); return; }
+    const cdel = t.closest('.ce .tdel');
+    if (cdel) {
+      const ce = cdel.closest('.ce');
+      collapseThen(ce, () => { p.course = p.course.filter(x => x.id !== ce.dataset.id); renderCourse(); updateNext(p); queueSave(); });
+      return;
+    }
+
+    // results inside a check
+    const resEl = t.closest('.res');
+    if (resEl) {
+      const c = p.checks.find(x => x.id === t.closest('.chk').dataset.id);
+      const r = c && c.r.find(x => x.id === resEl.dataset.id);
+      if (!r) return;
+      if (t.closest('.tdel')) collapseThen(resEl, () => { c.r = c.r.filter(x => x !== r); renderChecks(); queueSave(); });
+      else if (t.closest('.tcm')) { const opened = toggleCm(r); renderChecks(); if (opened) focusCm(r.id); }
+      return;
+    }
+    // check card
+    const chkEl = t.closest('.chk');
+    if (chkEl) {
+      const c = p.checks.find(x => x.id === chkEl.dataset.id);
+      if (!c) return;
+      if (t.closest('.addres')) {
+        const r = newResult(c);
+        c.r.push(r);
+        renderChecks();
+        const inp = $(`#t-checks .res[data-id="${r.id}"] .rv, #t-checks .res[data-id="${r.id}"] .vsf`);
+        if (inp) inp.focus();
+        anim(inp && inp.closest('.res'), [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300 });
+        queueSave();
+      } else if (t.closest('.chead .tdel')) {
+        if (c.r.length && !await ask('حذف چک؟', `«${c.w}» و نتایج ثبت‌شده‌اش حذف می‌شود.`, 'حذف', true)) return;
+        collapseThen(chkEl, () => {
+          p.checks = p.checks.filter(x => x !== c);
+          renderChecks();
+          updateNext(p);
+          queueSave();
+        });
+      } else if (t.closest('.chead .tcm')) {
+        const opened = toggleCm(c);
+        renderChecks();
+        if (opened) focusCm(c.id);
+      }
+      return;
+    }
+    // to-do item
+    const taskEl = t.closest('.task');
+    if (taskEl) {
+      const key = taskEl.closest('.tasks').dataset.key;
+      const it = p[key].find(x => x.id === taskEl.dataset.id);
+      if (!it) return;
+      const sb = t.closest('.cstep');
+      if (sb) { toggleStep(it, +sb.dataset.s, taskEl, sb); return; }
+      if (t.closest('.tick')) {
+        it.d = !it.d;
+        it.dt = it.d ? Date.now() : 0;
+        taskEl.classList.toggle('done', it.d);
+        taskEl.querySelector('.tick').setAttribute('aria-checked', String(it.d));
+        popEl(taskEl.querySelector('.tick span'));
+        haptic('tick');
+        queueSave();
+      } else if (t.closest('.tcm')) {
+        const opened = toggleCm(it);
+        renderTodos(key);
+        if (opened) focusCm(it.id);
+      } else if (t.closest('.tdel')) {
+        collapseThen(taskEl, () => {
+          p[key] = p[key].filter(x => x !== it);
+          renderTodos(key);
+          updateNext(p);
+          queueSave();
+        });
+      }
+    }
+  });
+  $('#fab').addEventListener('click', addPatient);
+  $('#done').addEventListener('click', closeSheet);
+  $('#prev').addEventListener('click', () => go(-1));
+  $('#next').addEventListener('click', () => go(1));
+  $('#del').addEventListener('click', async () => {
+    const p = get(current);
+    if (!p) return;
+    const label = has(p.name) ? p.name.trim() : 'این بیمار';
+    if (!await ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود.`, 'حذف', true)) return;
+    state.patients = state.patients.filter(x => x !== p);
+    dropPhotos([p]);
+    current = null;
+    closeSheet();
+  });
+
+  /* ---------- dialog + toast ---------- */
+  function ask(title, body, okLabel, danger, onSync) {
+    return new Promise(res => {
+      $('#dt').textContent = title;
+      $('#db').textContent = body;
+      $('#dok').textContent = okLabel;
+      $('#dok').className = 'btn ' + (danger ? 'danger' : 'primary');
+      $('#scrim').classList.add('show');
+      const done = v => { $('#scrim').classList.remove('show'); $('#dok').onclick = $('#dno').onclick = null; res(v); };
+      $('#dok').onclick = () => { if (onSync) onSync(); done(true); };
+      $('#dno').onclick = () => done(false);
+    });
+  }
+  let toastTimer = null, toastExpire = null;
+  function toast(msg, actLabel, actFn, onExpire) {
+    clearTimeout(toastTimer);
+    if (toastExpire) { const f = toastExpire; toastExpire = null; f(); }   // the previous undo window is over
+    $('#tmsg').textContent = msg;
+    const b = $('#tact');
+    b.style.display = actLabel ? '' : 'none';
+    b.textContent = actLabel || '';
+    toastExpire = onExpire || null;
+    b.onclick = () => { clearTimeout(toastTimer); toastExpire = null; $('#toast').classList.remove('show'); b.onclick = null; if (actFn) actFn(); };
+    $('#toast').classList.add('show');
+    toastTimer = setTimeout(() => {
+      $('#toast').classList.remove('show');
+      b.onclick = null;
+      if (toastExpire) { const f = toastExpire; toastExpire = null; f(); }
+    }, actLabel ? 8000 : 2400);
+  }
+
+  /* ---------- clear shift -> history ---------- */
+  /* ---------- share / copy report ---------- */
+  /* ---------- share: choose what goes in, and which parts carry a date and time ---------- */
+  const SHARE_SECTIONS = [
+    ['info', 'سن، جنس، پزشک، شماره پرونده', false],
+    ['dxhx', 'تشخیص نهایی و شرح حال', false],
+    ['course', 'سیر بالینی', true],
+    ['actions', 'اقدامات (با شرح حال و Daily routine)', true],
+    ['consults', 'مشاوره‌ها', true],
+    ['checks', 'چک‌ها و نتایج', true],
+    ['notes', 'توضیحات', false],
+    ['disch', 'خلاصه پرونده و کد دارو', false]
+  ];
+  function report(ps, ward, date, o) {
+    o = o || settings.share;
+    const on = k => o.on[k] !== false, tm = k => !!(o.tm && o.tm[k]);
+    const list = o.discharged === false ? ps.filter(p => !p.discharged) : ps;
+    const todo = (l, k) => realItems(l).map(i => `${i.d ? '☑' : '☐'} ${i.t.trim()}${stepsTxt(i)}${has(i.c) ? ' (' + i.c.trim() + ')' : ''}${tm(k) ? tmTxt(i.at, i.dt) : ''}`).join('\n');
+    const chk = l => l.filter(c => has(c.w)).map(c => {
+      const res = c.r.filter(r => has(r.v) || has(r.c))
+        .map(r => `${tm('checks') ? (r.tm || '') + ' ' : ''}${r.v.trim()}${has(r.c) ? ' (' + r.c.trim() + ')' : ''}`.trim()).join('، ');
+      return `• ${c.w.trim()}${has(c.iv) ? ' (هر ' + c.iv.trim() + ')' : ''}${has(c.c) ? ' - ' + c.c.trim() : ''}${res ? ': ' + res : ''}${tm('checks') ? tmTxt(c.t0, c.dn) : ''}`;
+    }).join('\n');
+    const head = ['گزارش شیفت', has(ward) ? ward.trim() : '', dateText(date)].filter(Boolean).join(' - ');
+    const body = list.map(p => {
+      const top = [has(p.bed) ? 'تخت ' + p.bed.trim() : '', has(p.name) ? p.name.trim() : 'بدون نام',
+        on('info') ? ageText(p) : '', on('info') && has(p.sex) ? p.sex : '', p.discharged ? '(ترخیص شد)' : ''].filter(Boolean).join('، ');
+      const lines = [top];
+      if (on('info')) {
+        if (!docEmpty(p.doctor)) lines.push('پزشک: ' + p.doctor.trim());
+        if (has(p.mrn)) lines.push('شماره پرونده: ' + p.mrn.trim());
+      }
+      if (on('dxhx')) {
+        if (has(p.dx)) lines.push('تشخیص نهایی: ' + p.dx.trim());
+        if (has(p.hx)) lines.push('شرح حال: ' + p.hx.trim());
+      }
+      if (on('course') && p.course.some(e => has(e.t))) {
+        lines.push('سیر بالینی:\n' + p.course.filter(e => has(e.t)).map(e => `${tm('course') ? '[' + stampBr(e.ts || e.at) + '] ' : ''}${e.t.trim()}`).join('\n'));
+      }
+      if (on('actions')) {
+        const rt = Object.keys(RT).map(k => `${rtDone(p, k) ? '☑' : '☐'} ${RT[k].label}${tm('actions') && rtDone(p, k) ? ' [انجام شد ' + stamp(p.rt[k]) + ']' : ''}`).join('\n');
+        const a = todo(p.actions, 'actions');
+        lines.push('اقدامات لازم:\n' + rt + (a ? '\n' + a : ''));
+      }
+      if (on('consults') && todo(p.consults, 'consults')) lines.push('مشاوره‌ها:\n' + todo(p.consults, 'consults'));
+      if (on('checks') && chk(p.checks)) lines.push('چک‌ها:\n' + chk(p.checks));
+      if (on('disch') && p.discharged) {
+        lines.push('خلاصه پرونده: ' + (p.summary ? 'نوشته شد' : 'نشده'));
+        lines.push('کد دارو: ' + (has(p.drugCode) ? p.drugCode.trim() : 'ثبت نشده'));
+      }
+      if (on('notes') && has(p.notes)) lines.push('توضیحات: ' + p.notes.trim());
+      return lines.join('\n');
+    });
+    return head + '\n\n' + (body.length ? body.join('\n\n') : 'بیماری برای ارسال نیست');
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); toast('گزارش کپی شد'); return true; }
+    catch (e) {
+      const t = document.createElement('textarea');
+      t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) {}
+      t.remove();
+      toast(ok ? 'گزارش کپی شد' : 'کپی انجام نشد');
+      return ok;
+    }
+  }
+  async function sendText(text) {
+    if (navigator.share) {
+      try { await navigator.share({ text }); return true; } catch (e) { if (e && e.name === 'AbortError') return false; }
+    }
+    return copyText(text);
+  }
+  let shareCtx = null;
+  const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  function renderShare() {
+    const o = settings.share;
+    $('#shopts').innerHTML = SHARE_SECTIONS.map(([k, label, hasTm]) =>
+      `<div class="shrow"><button class="sumrow" type="button" role="checkbox" data-k="${k}" aria-checked="${o.on[k] !== false}"><span class="cb">${CHECK}</span>${label}</button>` +
+      (hasTm ? `<button class="shtm" type="button" data-t="${k}" aria-pressed="${!!o.tm[k]}" aria-label="همراه با تاریخ و ساعت">${CLOCK}</button>` : '<span class="shtm ph"></span>') + '</div>').join('') +
+      `<div class="shrow"><button class="sumrow" type="button" role="checkbox" data-k="__dis" aria-checked="${o.discharged !== false}"><span class="cb">${CHECK}</span>شامل بیماران ترخیص‌شده</button><span class="shtm ph"></span></div>`;
+    $('#shprev').textContent = report(shareCtx.ps, shareCtx.ward, shareCtx.date, o);
+  }
+  function openShare(ps, ward, date) {
+    if (!ps.length) { toast('بیماری برای گزارش نیست'); return; }
+    shareCtx = { ps, ward, date };
+    renderShare();
+    $('#sh').classList.add('show');
+  }
+  const closeShare = () => $('#sh').classList.remove('show');
+  $('#share').addEventListener('click', () => openShare(state.patients, state.shift.ward, state.shift.date));
+  $('#shopts').addEventListener('click', e => {
+    const c = e.target.closest('[data-k]'), t = e.target.closest('[data-t]'), o = settings.share;
+    if (c) { if (c.dataset.k === '__dis') o.discharged = o.discharged === false; else o.on[c.dataset.k] = o.on[c.dataset.k] === false; haptic('tick'); }
+    else if (t) { o.tm[t.dataset.t] = !o.tm[t.dataset.t]; haptic('tick'); }
+    else return;
+    renderShare();
+    store.save(SKEY, settings);
+  });
+  $('#shgo').addEventListener('click', async () => { if (await sendText(report(shareCtx.ps, shareCtx.ward, shareCtx.date, settings.share))) closeShare(); });
+  $('#shcopy').addEventListener('click', async () => { if (await copyText(report(shareCtx.ps, shareCtx.ward, shareCtx.date, settings.share))) closeShare(); });
+  $('#shno').addEventListener('click', closeShare);
+  $('#sh').addEventListener('click', e => { if (e.target === $('#sh')) closeShare(); });
+
+
+  /* ---------- home-screen icon (generated) ---------- */
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 180;
+    const g = c.getContext('2d');
+    g.fillStyle = '#0E5A6E'; g.fillRect(0, 0, 180, 180);
+    g.fillStyle = '#fff'; g.fillRect(77, 42, 26, 96); g.fillRect(42, 77, 96, 26);
+    const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  } catch (e) {}
+
+  /* ---------- polish: sheet drag-to-dismiss, scroll hairlines, photo viewer drag ---------- */
+  new MutationObserver(() => document.body.classList.toggle('sheet-open', !!document.querySelector('.sheet.open')))
+    .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+
+  document.addEventListener('scroll', e => {
+    const t = e.target;
+    if (!t || !t.classList) return;
+    if (t.classList.contains('scroll')) {
+      const top = t.closest('.view') && t.closest('.view').querySelector('.top');
+      if (top) top.classList.toggle('scrolled', t.scrollTop > 2);
+    } else if (t.classList.contains('form')) {
+      const h = t.parentElement && (t.parentElement.querySelector('.psegbar') || t.parentElement.querySelector('.shead'));
+      if (h) h.classList.toggle('scrolled', t.scrollTop > 2);
+    }
+  }, true);
+
+  function enableSheetDrag(sheet, close) {
+    const head = sheet.querySelector('.shead');
+    let st = null;
+    head.addEventListener('pointerdown', e => {
+      if (e.target.closest('button')) return;
+      st = { y0: e.clientY, dy: 0, t0: Date.now(), id: e.pointerId };
+      try { head.setPointerCapture(e.pointerId); } catch (err) {}
+      sheet.style.transition = 'none';
+    });
+    head.addEventListener('pointermove', e => {
+      if (!st || e.pointerId !== st.id) return;
+      const raw = e.clientY - st.y0;
+      st.dy = raw > 0 ? raw : raw * 0.12;
+      sheet.style.transform = `translateY(${st.dy}px)`;
+    });
+    const end = cancel => {
+      if (!st) return;
+      const s = st;
+      st = null;
+      const speed = s.dy / Math.max(1, Date.now() - s.t0);
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+      if (!cancel && (s.dy > 120 || (s.dy > 40 && speed > 0.8))) close();
+    };
+    head.addEventListener('pointerup', () => end(false));
+    head.addEventListener('pointercancel', () => end(true));
+  }
+  enableSheetDrag($('#sheet'), () => closeSheet());
+  enableSheetDrag($('#msheet'), () => closeShift());
+  enableSheetDrag($('#hsheet'), () => closeHistory());
+
+  /* ---------- photo viewer: pinch / double-tap zoom, pan, drag down to close ---------- */
+  const zs = { s: 1, x: 0, y: 0 };
+  function lbApply(animated) {
+    const img = $('#lbimg');
+    img.style.transition = animated ? 'transform .32s var(--ease)' : 'none';
+    img.style.transform = (zs.s === 1 && !zs.x && !zs.y) ? '' : `translate(${zs.x}px, ${zs.y}px) scale(${zs.s})`;
+    $('#lbhint').style.opacity = zs.s > 1.02 ? 0 : 1;
+  }
+  function lbResetZoom(animated) { zs.s = 1; zs.x = 0; zs.y = 0; lbApply(animated); }
+  (function lightbox() {
+    const lb = $('#lb'), img = $('#lbimg');
+    const ptrs = new Map();
+    let g = null, lastTap = { t: 0, x: 0, y: 0 };
+    const center = () => { const r = img.getBoundingClientRect(); return { x: r.left + r.width / 2 - zs.x, y: r.top + r.height / 2 - zs.y }; };
+    const clampPan = () => {
+      const mx = Math.max(0, img.offsetWidth * (zs.s - 1) / 2), my = Math.max(0, img.offsetHeight * (zs.s - 1) / 2);
+      zs.x = Math.max(-mx, Math.min(mx, zs.x));
+      zs.y = Math.max(-my, Math.min(my, zs.y));
+    };
+    function zoomAt(px, py) {
+      if (zs.s > 1.05) { lbResetZoom(true); return; }
+      const c = center(), s = 2.6;
+      zs.s = s; zs.x = (px - c.x) * (1 - s); zs.y = (py - c.y) * (1 - s);
+      clampPan();
+      lbApply(true);
+    }
+    const two = () => { const [a, b] = [...ptrs.values()]; return { a, b, d: Math.hypot(a.x - b.x, a.y - b.y) || 1, m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }; };
+    img.addEventListener('pointerdown', e => {
+      try { img.setPointerCapture(e.pointerId); } catch (err) {}
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptrs.size === 2) {
+        lb.style.backgroundColor = '';
+        lbApply(false);                       // cancel a half-done drag-to-close
+        const t = two();
+        g = { type: 'pinch', d0: t.d, s0: zs.s, x0: zs.x, y0: zs.y, m0: t.m, c: center() };
+      } else if (ptrs.size === 1) {
+        g = { type: zs.s > 1.02 ? 'pan' : 'dismiss', x0: e.clientX, y0: e.clientY, sx: zs.x, sy: zs.y, t0: Date.now(), dy: 0 };
+      }
+    });
+    img.addEventListener('pointermove', e => {
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!g) return;
+      if (g.type === 'pinch' && ptrs.size >= 2) {
+        const t = two();
+        const s = Math.max(1, Math.min(6, g.s0 * t.d / g.d0));
+        const lx = (g.m0.x - g.c.x - g.x0) / g.s0, ly = (g.m0.y - g.c.y - g.y0) / g.s0;
+        zs.s = s; zs.x = t.m.x - g.c.x - lx * s; zs.y = t.m.y - g.c.y - ly * s;
+        clampPan();
+        lbApply(false);
+      } else if (g.type === 'pan') {
+        zs.x = g.sx + (e.clientX - g.x0); zs.y = g.sy + (e.clientY - g.y0);
+        clampPan();
+        lbApply(false);
+      } else if (g.type === 'dismiss') {
+        g.dy = e.clientY - g.y0;
+        const a = Math.abs(g.dy);
+        img.style.transition = 'none';
+        img.style.transform = `translateY(${g.dy}px) scale(${1 - Math.min(a / 1200, 0.2)})`;
+        lb.style.backgroundColor = `rgba(0,0,0,${0.94 - Math.min(a / 500, 0.6)})`;
+      }
+    });
+    const end = e => {
+      if (!ptrs.has(e.pointerId)) return;
+      const was = g;
+      ptrs.delete(e.pointerId);
+      lb.style.backgroundColor = '';
+      if (was && was.type === 'pinch') {
+        if (zs.s < 1.05) lbResetZoom(true); else { clampPan(); lbApply(true); }
+        if (ptrs.size === 1) {              // the remaining finger keeps panning
+          const [p] = [...ptrs.values()];
+          g = { type: 'pan', x0: p.x, y0: p.y, sx: zs.x, sy: zs.y, t0: Date.now(), dy: 0, noTap: true };
+        } else g = null;
+        return;
+      }
+      g = null;
+      if (!was) return;
+      const moved = Math.hypot(e.clientX - was.x0, e.clientY - was.y0);
+      if (was.type === 'dismiss') {
+        img.style.transition = '';
+        const a = Math.abs(was.dy);
+        if (a > 110 || (a > 40 && a / Math.max(1, Date.now() - was.t0) > 0.8)) {
+          closeLB();
+          setTimeout(() => { img.style.transform = ''; }, 340);
+          return;
+        }
+        img.style.transform = '';
+      }
+      if (moved < 10 && !was.noTap) {       // a tap; two quick taps toggle the zoom
+        const now = Date.now();
+        if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) { lastTap.t = 0; zoomAt(e.clientX, e.clientY); }
+        else lastTap = { t: now, x: e.clientX, y: e.clientY };
+      }
+    };
+    img.addEventListener('pointerup', end);
+    img.addEventListener('pointercancel', end);
+    img.addEventListener('wheel', e => {   // trackpad pinch / mouse wheel
+      e.preventDefault();
+      const c = center(), f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025));
+      const s = Math.max(1, Math.min(6, zs.s * f));
+      const lx = (e.clientX - c.x - zs.x) / zs.s, ly = (e.clientY - c.y - zs.y) / zs.s;
+      zs.s = s; zs.x = e.clientX - c.x - lx * s; zs.y = e.clientY - c.y - ly * s;
+      if (s === 1) { zs.x = 0; zs.y = 0; }
+      clampPan();
+      lbApply(false);
+    }, { passive: false });
+  })();
+
+  /* ---------- undo / redo: applying a snapshot and the buttons ---------- */
+  function closeEditorNoSave() {
+    current = null;
+    openCm.clear(); ivOther.clear();
+    closeLB(); closePicker();
+    $('#sheet').classList.remove('open');
+    $('#sheet').setAttribute('aria-hidden', 'true');
+    if (document.activeElement) document.activeElement.blur();
+  }
+  function applySnapshot(snap) {
+    const st = JSON.parse(snap.s);
+    state.patients = st.patients.map(normalize);
+    state.shift = st.shift;
+    history = JSON.parse(snap.h).map(h => ({ id: h.id, endedAt: h.endedAt, ward: h.ward || '', date: h.date, patients: (h.patients || []).map(normalize) }));
+    lastSnap = currentSnap();
+    flushRaw();
+    store.save(HKEY, { shifts: history });
+    if (current && !get(current)) closeEditorNoSave();
+    else if (current) { const sc = $('#form').scrollTop; fill(); $('#form').scrollTop = sc; }
+    if (currentH && !history.find(x => x.id === currentH)) closeHistory();
+    else if (currentH) openHistory(currentH);
+    renderShift();
+    renderCurrent();
+    updateUR();
+  }
+  function undo() {
+    checkpoint();
+    if (!undoStack.length) return;
+    redoStack.push(lastSnap);
+    applySnapshot(undoStack.pop());
+    haptic('tick');
+  }
+  function redo() {
+    checkpoint();
+    if (!redoStack.length) return;
+    undoStack.push(lastSnap);
+    applySnapshot(redoStack.pop());
+    haptic('tick');
+  }
+  (function injectUR() {
+    const UNDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+    const REDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>';
+    const mk = (cls, label, svg) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn urbtn ' + cls; b.setAttribute('aria-label', label); b.innerHTML = svg; b.disabled = true; return b; };
+    document.querySelectorAll('.top .tbtns').forEach(g => {
+      g.insertBefore(mk('redobtn', 'جلو (Redo)', REDO), g.firstChild);
+      g.insertBefore(mk('undobtn', 'برگشت (Undo)', UNDO), g.firstChild);
+    });
+    const pb = document.querySelector('.psegbar');   // patient sheet: prev/next already crowd the shead
+    if (pb) {
+      pb.insertBefore(mk('redobtn', 'جلو (Redo)', REDO), pb.firstChild);
+      pb.insertBefore(mk('undobtn', 'برگشت (Undo)', UNDO), pb.firstChild);
+    }
+    ['#msheet .shead .title', '#hsheet .shead .title'].forEach(sel => {
+      const t = document.querySelector(sel);
+      if (!t) return;
+      const u = mk('undobtn', 'برگشت (Undo)', UNDO), r = mk('redobtn', 'جلو (Redo)', REDO);
+      t.after(u);
+      u.after(r);
+    });
+    document.addEventListener('click', e => {
+      const b = e.target.closest('.undobtn, .redobtn');
+      if (!b || b.disabled) return;
+      if (b.classList.contains('undobtn')) undo(); else redo();
+    });
+  })();
+
+  /* ---------- patient form: three parts (info / actions / clinical course) ---------- */
+  const PANES = ['info', 'act', 'course'];
+  let curPane = 'info';
+  function showPane(name, animate) {
+    const i = PANES.indexOf(name);
+    if (i < 0) return;
+    const prev = PANES.indexOf(curPane);
+    curPane = name;
+    document.querySelectorAll('#form .pane').forEach(el => { el.hidden = el.dataset.pane !== name; });
+    const seg = $('#pseg');
+    seg.style.setProperty('--i', i);
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.p === name)));
+    growAll($('#form'));   // textareas measured while hidden need a fresh height
+    $('#form').scrollTop = 0;
+    if (animate && prev !== i) anim($('#form .pane:not([hidden])'), [{ opacity: 0, transform: `translateX(${i > prev ? -18 : 18}px)` }, { opacity: 1, transform: 'none' }], { duration: 340 });
+  }
+  $('#pseg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-p]');
+    if (b && b.dataset.p !== curPane) { haptic('tick'); showPane(b.dataset.p, true); }
+  });
+
+  /* ---------- clinical course: each entry carries its own date and time ---------- */
+  const stampBr = ts => {
+    const j = jOf(new Date(ts));
+    return `${j.d} ${MONTHS[j.m - 1]}${j.y !== jOf().y ? ' ' + j.y : ''} - ${hm(ts)}`;
+  };
+  function courseHTML(e) {
+    return `<div class="ce" data-id="${e.id}"><div class="cehead"><button class="cst" type="button" aria-label="ویرایش تاریخ و ساعت">[${stampBr(e.ts || e.at || Date.now())}]</button>` +
+      `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>` +
+      `<textarea class="ct" rows="1" dir="auto" spellcheck="false">${esc(e.t)}</textarea></div>`;
+  }
+
+  function renderCourse() {
+    const p = get(current);
+    if (!p) return;
+    const box = $('#t-course');
+    box.innerHTML = p.course.map(courseHTML).join('');
+    growAll(box);
+  }
+  function addCourse() {
+    const p = get(current);
+    const last = p.course[p.course.length - 1];
+    if (last && !has(last.t)) { const ta = $(`#t-course .ce[data-id="${last.id}"] .ct`); if (ta) ta.focus(); return; }
+    const now = Date.now();
+    const e = { id: uid(), t: '', at: now, ts: now };
+    p.course.push(e);
+    renderCourse();
+    const el = $(`#t-course .ce[data-id="${e.id}"]`);
+    if (el) {
+      el.querySelector('.ct').focus();
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      anim(el, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300 });
+    }
+    updateNext(p);
+    queueSave();
+  }
+  $('#form').addEventListener('keydown', ev => {   // Enter is a normal new line; Backspace on an empty note removes it
+    const t = ev.target;
+    if (!t.classList || !t.classList.contains('ct')) return;
+    if (ev.key !== 'Backspace' || t.value) return;
+    const p = get(current);
+    const entry = p && p.course.find(x => x.id === t.closest('.ce').dataset.id);
+    if (!entry) return;
+    ev.preventDefault();
+    const i = p.course.indexOf(entry);
+    p.course.splice(i, 1);
+    renderCourse();
+    const prev = p.course[i - 1];
+    if (prev) { const ta = $(`#t-course .ce[data-id="${prev.id}"] .ct`); if (ta) ta.focus(); }
+    queueSave();
+  });
+
+  /* ---------- edit the date and time of a clinical-course note ---------- */
+  let tsEditId = null;
+  function jToDate(y, m, d, hh, mm) {
+    const doy = (m <= 6 ? (m - 1) * 31 : 186 + (m - 7) * 30) + d - 1;
+    let c = new Date(y + 621, 2, 21 + doy, hh, mm);
+    const key = (yy, mo, dd) => yy * 372 + (mo - 1) * 31 + dd;
+    for (let k = 0; k < 4; k++) {
+      const j = jOf(c);
+      const diff = key(j.y, j.m, j.d) - key(y, m, d);
+      if (!diff) break;
+      c = new Date(c.getFullYear(), c.getMonth(), c.getDate() - Math.sign(diff), hh, mm);
+    }
+    return c;
+  }
+  function tsFillDays(y, m, d) {
+    let ds = '';
+    for (let i = 1; i <= dim(y, m); i++) ds += `<option value="${i}">${i}</option>`;
+    $('#ts-day').innerHTML = ds;
+    $('#ts-day').value = Math.min(d, dim(y, m));
+  }
+  function tsFillFrom(ts) {
+    const j = jOf(new Date(ts));
+    $('#ts-year').value = j.y;
+    $('#ts-mon').value = j.m;
+    tsFillDays(j.y, j.m, j.d);
+    $('#ts-time').value = hm(ts);
+  }
+  function openTs(entry) {
+    tsEditId = entry.id;
+    const ts = entry.ts || entry.at || Date.now();
+    const j = jOf(new Date(ts)), now = jOf().y;
+    let ys = '';
+    for (let y = Math.min(now - 2, j.y); y <= Math.max(now + 1, j.y); y++) ys += `<option value="${y}">${y}</option>`;
+    $('#ts-year').innerHTML = ys;
+    $('#ts-mon').innerHTML = MONTHS.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('');
+    tsFillFrom(ts);
+    $('#ts').classList.add('show');
+  }
+  ['#ts-mon', '#ts-year'].forEach(sel => $(sel).addEventListener('change', () => tsFillDays(+$('#ts-year').value, +$('#ts-mon').value, +$('#ts-day').value)));
+  $('#ts-now').addEventListener('click', () => tsFillFrom(Date.now()));
+  $('#ts-cancel').addEventListener('click', () => $('#ts').classList.remove('show'));
+  $('#ts').addEventListener('click', e => { if (e.target === $('#ts')) $('#ts').classList.remove('show'); });
+  $('#ts-save').addEventListener('click', () => {
+    const p = get(current);
+    const en = p && p.course.find(x => x.id === tsEditId);
+    if (en) {
+      const y = +$('#ts-year').value, m = +$('#ts-mon').value, d = Math.min(+$('#ts-day').value, dim(y, m));
+      const [hh, mm] = ($('#ts-time').value || '00:00').split(':').map(Number);
+      en.ts = jToDate(y, m, d, hh || 0, mm || 0).getTime();
+      en.man = true;   // set by hand: typing no longer re-stamps this note
+      p.course.sort((a, b) => (a.ts || a.at || 0) - (b.ts || b.at || 0));
+      renderCourse();
+      queueSave();
+    }
+    $('#ts').classList.remove('show');
+  });
+
+
+  /* ---------- end of shift: start empty, or carry the patients over ---------- */
+  function carryPatient(p, o) {
+    const q = normalize(JSON.parse(JSON.stringify(p)));
+    q.id = uid();
+    q.discharged = false;
+    q.summary = false;
+    const pending = list => list.filter(i => has(i.t) && (o.scope === 'all' || !i.d)).map(i => Object.assign({}, i, { id: uid() }));
+    q.actions = o.actions ? pending(q.actions) : [];
+    q.consults = o.consults ? pending(q.consults) : [];
+    q.checks = o.checks ? q.checks.map(c => Object.assign({}, c, { id: uid(), r: [], t0: Date.now(), dn: 0 })) : [];
+    q.course = q.course.map(e => Object.assign({}, e, { id: uid() }));
+    q.rt = { hx: p.rt && p.rt.hx ? p.rt.hx : 0, dn: 0, pc: 0 };   // history note carries over; the daily routine starts fresh
+    q.drugCode = '';
+    q.photos = (p.photos || []).map(x => ({ id: x.id }));   // same photo files, shared with the archived shift
+    return q;
+  }
+  function endShift(o) {
+    const ps = state.patients.filter(p => !isBlank(p));
+    const entry = { id: uid(), endedAt: new Date().toISOString(), ward: state.shift.ward, date: state.shift.date, patients: ps };
+    history.unshift(entry);
+    const carried = o.mode === 'carry' ? ps.filter(p => !p.discharged).map(p => carryPatient(p, o)) : [];
+    state.patients = sortPatients(carried);
+    state.shift = { ward: entry.ward, date: jOf() };   // ward stays, date resets to today
+    flush(); flushH();
+    renderShift();
+    renderCurrent();
+    toast(carried.length ? `شیفت ذخیره شد و ${carried.length} بیمار منتقل شد` : 'شیفت در تاریخچه ذخیره شد', 'بازگردانی', () => {
+      history = history.filter(x => x !== entry);
+      state.patients = ps;
+      state.shift = { ward: entry.ward, date: entry.date };
+      flush(); flushH();
+      renderShift();
+      renderCurrent();
+    });
+  }
+  function renderNx() {
+    const ps = state.patients.filter(p => !isBlank(p));
+    const carryN = ps.filter(p => !p.discharged).length, disN = ps.length - carryN;
+    const n = settings.next;
+    $('#nxsub').textContent = `شیفت فعلی (${ps.length} بیمار) در تاریخچه ذخیره می‌شود.`;
+    $('#nxseg').style.setProperty('--i', n.mode === 'carry' ? 0 : 1);
+    $('#nxseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m === n.mode)));
+    $('#nxopts').hidden = n.mode !== 'carry';
+    $('#nxopts').querySelectorAll('[data-k]').forEach(b => b.setAttribute('aria-checked', String(!!n[b.dataset.k])));
+    $('#nxscope').hidden = n.mode !== 'carry' || !(n.actions || n.consults);
+    $('#nxscope').style.setProperty('--i', n.scope === 'all' ? 1 : 0);
+    $('#nxscope').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.s === (n.scope || 'pending'))));
+    $('#nxhint').textContent = `${carryN} بیمار منتقل می‌شود${disN ? `؛ ${disN} ترخیص‌شده نمی‌آید` : ''}.` +
+      (n.actions || n.consults ? (n.scope === 'all' ? ' اقدام و مشاوره با همان وضعیت تیک می‌آید.' : ' از اقدام و مشاوره فقط موارد انجام‌نشده می‌آید.') : '') +
+      (n.checks ? ' چک‌ها بدون نتایج قبلی می‌آید.' : '');
+    $('#nxgo').textContent = n.mode === 'carry' && carryN ? `پایان شیفت و انتقال ${carryN} بیمار` : 'پایان شیفت';
+  }
+  $('#clear').addEventListener('click', () => {
+    if (!state.patients.some(p => !isBlank(p))) { toast('لیست از قبل خالی است'); return; }
+    renderNx();
+    $('#nx').classList.add('show');
+  });
+  $('#nxseg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-m]');
+    if (!b) return;
+    settings.next.mode = b.dataset.m;
+    renderNx();
+    store.save(SKEY, settings);
+  });
+  $('#nxscope').addEventListener('click', e => {
+    const b = e.target.closest('button[data-s]');
+    if (!b) return;
+    settings.next.scope = b.dataset.s;
+    renderNx();
+    store.save(SKEY, settings);
+  });
+  $('#nxopts').addEventListener('click', e => {
+    const b = e.target.closest('[data-k]');
+    if (!b) return;
+    settings.next[b.dataset.k] = !settings.next[b.dataset.k];
+    popEl(b.querySelector('.cb'));
+    haptic('tick');
+    renderNx();
+    store.save(SKEY, settings);
+  });
+  $('#nxno').addEventListener('click', () => $('#nx').classList.remove('show'));
+  $('#nx').addEventListener('click', e => { if (e.target === $('#nx')) $('#nx').classList.remove('show'); });
+  $('#nxgo').addEventListener('click', () => { $('#nx').classList.remove('show'); endShift(settings.next); });
+
+  function storageWorks() {
+    try {
+      const k = '__t' + Date.now();
+      localStorage.setItem(k, '1');
+      const ok = localStorage.getItem(k) === '1';
+      localStorage.removeItem(k);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  $('#form').addEventListener('keydown', ev => {   // Enter in a consult field moves on
+    const t = ev.target;
+    if (!t.classList || !t.classList.contains('cin') || ev.key !== 'Enter') return;
+    ev.preventDefault();
+    const nxt = t.classList.contains('cs') ? t.closest('.task').querySelector('.cw') : null;
+    if (nxt) nxt.focus(); else t.blur();
+  });
+
+  /* ---------- init ---------- */
+  renderShift();
+  (async () => {
+    const [saved, hist, th, , ft, st] = await Promise.all([store.load(KEY), store.load(HKEY), store.load(TKEY), photoStore.init(), store.load(FKEY), store.load(SKEY)]);
+    if (st) { settings.sound = st.sound !== false; settings.awake = !!st.awake; if (st.next) settings.next = Object.assign(settings.next, st.next);
+      if (st.share) settings.share = { on: Object.assign({}, st.share.on), tm: Object.assign(settings.share.tm, st.share.tm), discharged: st.share.discharged !== false }; }
+    await loadSavedFonts();
+    const fid = FONTS.some(f => f[0] === ft) && fontReady[ft] ? ft : 'system';
+    fontId = fid; document.documentElement.dataset.font = fid;
+    if (saved && Array.isArray(saved.patients)) {
+      state.patients = sortPatients(saved.patients.map(normalize));
+      const s = saved.shift || {};
+      state.shift = { ward: s.ward || '', date: (s.date && s.date.y) ? s.date : jOf() };
+    }
+    if (hist && Array.isArray(hist.shifts)) {
+      history = hist.shifts.map(h => ({
+        id: h.id || uid(),
+        endedAt: h.endedAt,
+        ward: h.ward || '',
+        date: (h.date && h.date.y) ? h.date : jOf(h.endedAt ? new Date(h.endedAt) : new Date()),
+        patients: (h.patients || []).map(normalize)
+      }));
+    }
+    if (th === 'dark' || th === 'light') { theme = th; applyTheme(); }
+    renderShift();
+    renderList();
+    staggerIn('list');
+    lastSnap = currentSnap();
+    updateUR();
+    if (!window.storage && !storageWorks()) toast('این نمایشگر اجازه ذخیره‌سازی نمی‌دهد؛ اطلاعات با بستن برنامه پاک می‌شود', 'متوجه شدم');
+    syncOpts();
+    if (settings.awake) setAwake(true, true);
+    tick();
+    setInterval(tick, 15000);
+  })();
+})();
+</script>
+</body>
+</html>
