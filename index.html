@@ -494,6 +494,22 @@ button.cst:active{opacity:.6}
 .shtm.ph{visibility:hidden}
 .shprev{margin-top:12px;max-height:24vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.75;background:var(--press);border-radius:12px;padding:10px 12px;color:var(--ink2)}
 
+/* ===== admission date, imaging, editable due time ===== */
+.two.eq{grid-template-columns:1fr 1fr}
+.admbtn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:48px;text-align:right}
+.admbtn .admday{font-size:12px;color:var(--brand);font-weight:600}
+.duebtn{display:flex;gap:12px;flex-wrap:wrap;width:calc(100% - 26px);margin:0 14px 6px;padding:4px 6px;border-radius:8px;border:0;background:none;
+  font-size:12.5px;color:var(--ink2);text-align:right;font-variant-numeric:tabular-nums}
+.duebtn:active{background:var(--press)}
+.duebtn.od{color:var(--warn);font-weight:600}
+.task.img .crow{padding:0 12px 0 4px}
+.itype{flex:1;font-weight:600;padding:2px 12px;color:var(--ink)}
+.idt{display:block;width:calc(100% - 24px);margin:0 12px 8px;min-height:44px;border:0;border-radius:10px;background:var(--press);
+  padding:8px 10px;line-height:1.6;font:inherit;font-size:15px;color:var(--ink);resize:none;overflow:hidden}
+.idt:focus{outline:2px solid var(--brand)}
+.task.img .sumrow{border-radius:0;border:0;border-top:1px solid var(--line);background:transparent;min-height:46px;font-size:14px}
+.task.img.done{background:var(--ok-soft)}
+
 </style>
 </head>
 <body>
@@ -640,8 +656,12 @@ button.cst:active{opacity:.6}
 
     <div class="field"><label for="f-doctor">نام پزشک</label>
       <input class="inp" id="f-doctor" data-f="doctor" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-    <div class="field"><label for="f-mrn">شماره پرونده</label>
-      <input class="inp" id="f-mrn" data-f="mrn" dir="ltr" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+    <div class="two eq">
+      <div class="field"><label for="f-mrn">شماره پرونده</label>
+        <input class="inp" id="f-mrn" data-f="mrn" dir="ltr" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><span class="lbl">تاریخ پذیرش</span>
+        <button class="inp admbtn" id="admBtn" type="button" aria-label="ثبت تاریخ پذیرش"></button></div>
+    </div>
 
     <div class="field"><span class="lbl">سن</span>
       <div class="agegrid">
@@ -691,6 +711,9 @@ button.cst:active{opacity:.6}
     <div class="field"><div class="lblrow"><span class="lbl">مشاوره‌ها</span><button class="tmbtn" type="button" data-tm="consults" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
       <div class="tasks" id="t-consults" data-key="consults"></div>
       <div class="addrow"><button class="addtask" type="button" data-add="consults">+ افزودن مشاوره</button></div></div>
+    <div class="field"><div class="lblrow"><span class="lbl">تصویربرداری</span><button class="tmbtn" type="button" data-tm="img" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+      <div class="tasks" id="t-img"></div>
+      <div class="addrow"><button class="addtask" id="addimg" type="button">+ افزودن تصویربرداری</button></div></div>
 
     <div class="field"><div class="lblrow"><span class="lbl">چک‌ها</span><button class="tmbtn" type="button" data-tm="checks" aria-pressed="false" aria-label="نمایش زمان و تاریخ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
       <div class="tasks" id="t-checks"></div>
@@ -805,6 +828,7 @@ button.cst:active{opacity:.6}
       <button class="sumrow" type="button" role="checkbox" aria-checked="true" disabled><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>اطلاعات بیمار و سیر بالینی (همیشه)</button>
       <button class="sumrow" type="button" role="checkbox" data-k="actions" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>اقدامات</button>
       <button class="sumrow" type="button" role="checkbox" data-k="consults" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>مشاوره‌ها</button>
+      <button class="sumrow" type="button" role="checkbox" data-k="img" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>تصویربرداری</button>
       <button class="sumrow" type="button" role="checkbox" data-k="checks" aria-checked="false"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>چک‌ها</button>
       <div class="pseg" id="nxscope" style="--n:2" role="tablist" hidden>
         <span class="pthumb"></span>
@@ -924,21 +948,23 @@ button.cst:active{opacity:.6}
 
   /* ---------- data model ---------- */
   const blank = () => ({ id: uid(), bed:'', name:'', doctor:DOC, mrn:'', ageY:'', ageM:'', sex:'', hx:'', dx:'', notes:'',
-    actions:[], consults:[], checks:[], course:[], summary:false, photos:[], discharged:false, rt:{hx:0,dn:0,pc:0}, drugCode:'' });
+    actions:[], consults:[], checks:[], course:[], img:[], adm:null, summary:false, photos:[], discharged:false, rt:{hx:0,dn:0,pc:0}, drugCode:'' });
   const realItems = list => list.filter(i => has(i.t));
   const isBlank = p => ['bed','name','mrn','ageY','ageM','sex','hx','dx','notes','drugCode'].every(f => !has(p[f])) && docEmpty(p.doctor) &&
     !p.summary && !p.discharged && !p.photos.length && !p.checks.length && !p.course.some(e => has(e.t)) && LISTS.every(k => realItems(p[k]).length === 0) &&
-    !(p.rt && (p.rt.hx || p.rt.dn || p.rt.pc));
+    !(p.rt && (p.rt.hx || p.rt.dn || p.rt.pc)) && !p.img.length && !p.adm;
 
   const normItems = v => Array.isArray(v)
     ? v.map(i => ({ id: i.id || uid(), t: String(i.t || ''), d: !!i.d, c: String(i.c || ''), at: i.at || 0, dt: i.dt || 0 }))
     : String(v || '').split('\n').map(s => s.trim()).filter(Boolean).map(t => ({ id: uid(), t, d: false, c: '', at: Date.now(), dt: 0 }));
   const normChecks = v => Array.isArray(v)
     ? v.map(c => (c && c.w !== undefined)
-        ? { id: c.id || uid(), w: String(c.w || ''), iv: String(c.iv || ''), c: String(c.c || ''), t0: c.t0 || Date.now(), dn: c.dn || 0,
+        ? { id: c.id || uid(), w: String(c.w || ''), iv: String(c.iv || ''), c: String(c.c || ''), t0: c.t0 || Date.now(), dn: c.dn || 0, dueOverride: c.dueOverride || 0,
             r: (c.r || []).map(r => ({ id: r.id || uid(), tm: String(r.tm || ''), ts: r.ts || 0, v: String(r.v || ''), c: String(r.c || ''), vs: r.vs || undefined })) }
-        : { id: (c && c.id) || uid(), w: String((c && c.t) || ''), iv: '', c: '', t0: Date.now(), dn: 0, r: [] }).filter(c => has(c.w))
-    : String(v || '').split('\n').map(s => s.trim()).filter(Boolean).map(w => ({ id: uid(), w, iv: '', c: '', t0: Date.now(), dn: 0, r: [] }));
+        : { id: (c && c.id) || uid(), w: String((c && c.t) || ''), iv: '', c: '', t0: Date.now(), dn: 0, dueOverride: 0, r: [] }).filter(c => has(c.w))
+    : String(v || '').split('\n').map(s => s.trim()).filter(Boolean).map(w => ({ id: uid(), w, iv: '', c: '', t0: Date.now(), dn: 0, dueOverride: 0, r: [] }));
+  const normImg = v => Array.isArray(v) ? v.map(it => ({ id: it.id || uid(), w: String(it.w || ''), detail: String(it.detail || ''),
+    form: !!it.form, followup: !!it.followup, followupDone: !!it.followupDone, c: String(it.c || ''), at: it.at || 0, dt: it.dt || 0 })).filter(it => has(it.w)) : [];
   function normalize(p) {
     const q = Object.assign(blank(), p);
     q.doctor = has(p.doctor) ? p.doctor : DOC;
@@ -949,6 +975,8 @@ button.cst:active{opacity:.6}
     q.actions = normItems(p.actions);
     q.consults = normConsults(p.consults);
     q.checks = normChecks(p.checks);
+    q.img = normImg(p.img);
+    q.adm = (p.adm && p.adm.y) ? { y: +p.adm.y, m: +p.adm.m, d: +p.adm.d } : null;
     q.course = Array.isArray(p.course) ? p.course.map(e => ({ id: e.id || uid(), t: String(e.t || ''), at: e.at || 0, ts: e.ts || e.at || 0, man: !!e.man })) : [];
     q.photos = Array.isArray(p.photos) ? p.photos.filter(x => x && x.id).map(x => ({ id: x.id })) : [];
     q.summary = !!p.summary;
@@ -960,8 +988,9 @@ button.cst:active{opacity:.6}
   }
   const prune = p => {
     LISTS.forEach(k => { p[k] = p[k].filter(i => has(i.t)); });
-    p.checks.forEach(c => { c.r = c.r.filter(r => has(r.v) || has(r.c)); });
+    p.checks.forEach(c => { c.r = c.r.filter(r => r.ts || has(r.v) || has(r.c)); });   // a logged check counts even with no value typed
     p.course = p.course.filter(e => has(e.t));
+    p.img = p.img.filter(it => has(it.w));
   };
 
   /* ---------- top of the actions tab: history note (once) + Daily routine (resets every day) ---------- */
@@ -1302,7 +1331,7 @@ button.cst:active{opacity:.6}
     let pills;
     if (p.discharged) pills = '<span class="pill a">ترخیص شد</span>' + (p.summary ? '<span class="pill a">خلاصه ✓</span>' : '<span class="pill k">خلاصه ناقص</span>');
     else pills = [
-      pillFor('actions', p.actions), pillFor('consults', p.consults),
+      pillFor('actions', p.actions), pillFor('consults', p.consults), imgPill(p.img),
       p.checks.length ? `<span class="pill c">چک ${p.checks.length}</span>` : '',
       p.photos.length ? `<span class="pill">عکس ${p.photos.length}</span>` : ''
     ].join('');
@@ -1450,15 +1479,15 @@ button.cst:active{opacity:.6}
     : '<span class="faint">—</span>';
   function tableHTML(ps) {
     return '<table><colgroup><col style="width:180px"><col style="width:120px"><col style="width:170px"><col style="width:220px">' +
-      '<col style="width:200px"><col style="width:170px"><col style="width:110px"></colgroup>' +
+      '<col style="width:200px"><col style="width:190px"><col style="width:170px"><col style="width:110px"></colgroup>' +
       '<thead><tr><th class="first">تخت و بیمار</th><th>پزشک</th><th>تشخیص</th><th>اقدامات لازم</th>' +
-      '<th>مشاوره‌ها</th><th>چک‌ها</th><th>خلاصه پرونده</th></tr></thead><tbody>' +
+      '<th>مشاوره‌ها</th><th>تصویربرداری</th><th>چک‌ها</th><th>خلاصه پرونده</th></tr></thead><tbody>' +
       ps.map(p =>
         `<tr data-id="${p.id}"${p.discharged ? ' class="dis"' : ''}>` +
         `<td class="first"><div class="in"><span class="n" dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '–'}</span>` +
         `<span dir="auto">${has(p.name) ? esc(p.name.trim()) : '<span class="faint">بدون نام</span>'}${p.discharged ? ' <span class="tag">ترخیص</span>' : ''}</span></div></td>` +
         `<td dir="auto">${docEmpty(p.doctor) ? '<span class="faint">—</span>' : esc(p.doctor.trim())}</td>` +
-        `<td dir="auto">${cell(p.dx)}</td><td>${todoCell(p.actions)}</td><td>${todoCell(p.consults)}</td><td>${checksCell(p.checks)}</td>` +
+        `<td dir="auto">${cell(p.dx)}</td><td>${todoCell(p.actions)}</td><td>${todoCell(p.consults)}</td><td>${imgCell(p.img)}</td><td>${checksCell(p.checks)}</td>` +
         `<td class="sm">${p.discharged ? `<span class="pill ${p.summary ? 'a' : 'k'}">${p.summary ? 'نوشته شد' : 'نشده'}</span>` : '<span class="faint">—</span>'}</td></tr>`
       ).join('') + '</tbody></table>';
   }
@@ -1551,7 +1580,7 @@ button.cst:active{opacity:.6}
 
   /* ---------- check reminders (work while the app is open) ---------- */
   const SKEY = 'shift-tracker-settings';
-  const settings = { sound: true, awake: false, next: { mode: 'carry', scope: 'pending', actions: false, consults: false, checks: false },
+  const settings = { sound: true, awake: false, next: { mode: 'carry', scope: 'pending', actions: false, consults: false, checks: false, img: false },
     share: { on: {}, tm: { course: true, actions: true, consults: true, checks: true }, discharged: true } };
   const alerted = new Set();
   let firstTick = true;
@@ -1569,10 +1598,14 @@ button.cst:active{opacity:.6}
   }
   function baseOf(c) {
     let b = Math.max(c.t0 || 0, c.dn || 0);
-    c.r.forEach(r => { if ((has(r.v) || has(r.c)) && r.ts > b) b = r.ts; });
+    c.r.forEach(r => { if (r.ts && r.ts > b) b = r.ts; });   // any logged check resets the timer, value or not
     return b;
   }
-  function dueOf(c) { const m = ivMin(c.iv); return m > 0 ? baseOf(c) + m * 60000 : 0; }
+  function dueOf(c) {
+    if (c.dueOverride) return c.dueOverride;
+    const m = ivMin(c.iv);
+    return m > 0 ? baseOf(c) + m * 60000 : 0;
+  }
   function hm(ts) {
     const d = new Date(ts);
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -1592,11 +1625,12 @@ button.cst:active{opacity:.6}
     if (t > Date.now() + 10 * 60000) t -= 86400000;   // a time later than now means last night
     return t;
   }
-  function dueLine(c) {
+function dueLine(c) {
     const d = dueOf(c);
     if (!d) return '';
     const ms = d - Date.now();
-    return `<div class="cdue${ms <= 0 ? ' od' : ''}"><span>بعدی ${hm(d)}</span><span>${ms <= 0 ? rel(-ms) + ' دیرکرد' : 'تا ' + rel(ms) + ' دیگر'}</span></div>`;
+    return `<button class="cdue duebtn${ms <= 0 ? ' od' : ''}" type="button" data-due="${c.id}" aria-label="ویرایش نوبت بعدی">` +
+      `<span>بعدی ${hm(d)}${c.dueOverride ? ' (دستی)' : ''}</span><span>${ms <= 0 ? rel(-ms) + ' دیرکرد' : 'تا ' + rel(ms) + ' دیگر'}</span></button>`;
   }
   function dueList() {
     const out = [];
@@ -1936,11 +1970,11 @@ button.cst:active{opacity:.6}
   const isVital = c => /vital|علائم حیاتی/i.test(c.w || '');
   const vsText = vs => VS.filter(([k]) => vs && has(vs[k])).map(([k, l]) => `${l} ${String(vs[k]).trim()}`).join('، ');
   const newResult = c => { const r = { id: uid(), tm: nowHM(), ts: Date.now(), v: '', c: '' }; if (isVital(c)) r.vs = {}; return r; };
-  function resHTML(r, c) {
-    const structured = !!c && isVital(c) && (!!r.vs || !has(r.v));   // vital-sign results come with HR / RR / BP / T / SpO2 ready to fill
+function resHTML(r, c) {
+    const structured = !!c && isVital(c);
     const time = `<input class="inp rtm" type="time" value="${esc(r.tm)}" aria-label="ساعت">`;
     const first = structured ? time + '<span class="rsp"></span>'
-      : time + `<input class="inp rv" dir="auto" placeholder="نتیجه" autocomplete="off" spellcheck="false" value="${esc(r.v)}">`;
+      : time + (has(r.v) ? `<input class="inp rv" dir="auto" placeholder="نتیجه" autocomplete="off" spellcheck="false" value="${esc(r.v)}">` : '<span class="rsp"></span>');
     const grid = structured
       ? `<div class="vsg">${VS.map(([k, l, m]) => `<label class="vsl"><span>${l}</span><input class="inp vsf" data-k="${k}" inputmode="${m}" dir="ltr" autocomplete="off" spellcheck="false" value="${esc((r.vs || {})[k] || '')}"></label>`).join('')}</div>` : '';
     return `<div class="res" data-id="${r.id}"><div class="rrow">${first}` +
@@ -1949,7 +1983,7 @@ button.cst:active{opacity:.6}
       `${showTm.has('checks') && r.ts ? `<div class="tmline"><span>ثبت شد ${stamp(r.ts)}</span></div>` : ''}</div>`;
   }
 
-  function chkHTML(c) {
+function chkHTML(c) {
     const custom = has(c.iv) && !IVS.includes(c.iv);
     const other = custom || ivOther.has(c.id);
     const opts = '<option value="">بدون فاصله</option>' +
@@ -1962,8 +1996,8 @@ button.cst:active{opacity:.6}
       (other ? `<input class="inp civo" dir="auto" placeholder="فاصله (مثلاً 45m)" autocomplete="off" spellcheck="false" value="${esc(custom ? c.iv : '')}">` : '') +
       cmBox(c) +
       (showTm.has('checks') ? tmLine(c.t0, c.dn) : '') + dueLine(c) +
-      `<div class="reslbl">نتایج</div><div class="results">${c.r.map(r => resHTML(r, c)).join('')}</div>` +
-      `<button class="addres" type="button">+ ثبت نتیجه (ساعت الان)</button></div>`;
+      (c.r.length ? `<div class="reslbl">تاریخچه</div><div class="results">${c.r.map(r => resHTML(r, c)).join('')}</div>` : '') +
+      `<button class="addres" type="button">✓ چک شد</button></div>`;
   }
   function renderChecks() {
     const p = get(current);
@@ -1971,8 +2005,12 @@ button.cst:active{opacity:.6}
     box.innerHTML = p.checks.map(chkHTML).join('');
     growAll(box);
   }
-  function openPicker() {
-    $('#pkchips').innerHTML = PRESETS.map(w => `<button class="chip" type="button" data-w="${esc(w)}">${esc(w)}</button>`).join('');
+let pkMode = 'check';
+  function openPicker(mode) {
+    pkMode = mode || 'check';
+    const list = pkMode === 'img' ? IMG_PRESETS : PRESETS;
+    $('#pkt').textContent = pkMode === 'img' ? 'چه تصویربرداری‌ای؟' : 'چه چیزی چک شود؟';
+    $('#pkchips').innerHTML = list.map(w => `<button class="chip" type="button" data-w="${esc(w)}">${esc(w)}</button>`).join('');
     $('#pkin').value = '';
     $('#pk').classList.add('show');
   }
@@ -1988,11 +2026,55 @@ button.cst:active{opacity:.6}
     const el = $(`#t-checks .chk[data-id="${c.id}"]`);
     if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); anim(el, [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 340 }); }
   }
-  $('#pkchips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) addCheck(b.dataset.w); });
-  $('#pkadd').addEventListener('click', () => addCheck($('#pkin').value));
-  $('#pkin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCheck($('#pkin').value); } });
+  const pkPick = w => (pkMode === 'img' ? addImg(w) : addCheck(w));
+  $('#pkchips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) pkPick(b.dataset.w); });
+  $('#pkadd').addEventListener('click', () => pkPick($('#pkin').value));
+  $('#pkin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pkPick($('#pkin').value); } });
   $('#pkclose').addEventListener('click', closePicker);
   $('#pk').addEventListener('click', e => { if (e.target === $('#pk')) closePicker(); });
+
+  /* ---------- imaging: type + free-text detail + "form filled" / optional "report follow-up" steps ---------- */
+  const IMG_PRESETS = ['سونوگرافی', 'CT', 'MRI', 'رادیوگرافی', 'ماموگرافی', 'آنژیوگرافی', 'اکوکاردیوگرافی'];
+  const imgDone = it => it.form && (!it.followup || it.followupDone);
+  function imgHTML(it) {
+    return `<div class="task img cons${imgDone(it) ? ' done' : ''}" data-id="${it.id}">` +
+      `<div class="crow"><span class="clab">تصویربرداری</span><b class="itype" dir="auto">${esc(it.w)}</b>` +
+      `<button class="tcm${has(it.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
+      `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>` +
+      `<textarea class="idt" rows="1" dir="auto" spellcheck="false" placeholder="مثلاً شکم و لگن و سایز کبد">${esc(it.detail)}</textarea>` +
+      `<button class="sumrow" type="button" role="checkbox" data-imgstep="form" aria-checked="${it.form}"><span class="cb">${CHECK}</span>برگه پر شد</button>` +
+      `<button class="sumrow" type="button" role="checkbox" data-imgstep="followup" aria-checked="${it.followup}"><span class="cb">${CHECK}</span>پیگیری ریپورت</button>` +
+      `<button class="sumrow sumline" type="button" role="checkbox" data-imgstep="followupDone" aria-checked="${it.followupDone}"${it.followup ? '' : ' hidden'}><span class="cb">${CHECK}</span>پیگیری ریپورت انجام شد</button>` +
+      cmBox(it) + (showTm.has('img') ? tmLine(it.at, it.dt) : '') + `</div>`;
+  }
+  function renderImg() {
+    const p = get(current);
+    const box = $('#t-img');
+    box.innerHTML = p.img.map(imgHTML).join('');
+    growAll(box);
+  }
+  function addImg(w) {
+    const p = get(current);
+    if (!p || !has(w)) return;
+    const it = { id: uid(), w: w.trim(), detail: '', form: false, followup: false, followupDone: false, c: '', at: Date.now(), dt: 0 };
+    p.img.push(it);
+    closePicker();
+    renderImg();
+    queueSave();
+    const el = $(`#t-img .task[data-id="${it.id}"]`);
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); anim(el, [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 340 }); }
+  }
+  const imgPill = list => {
+    if (!list.length) return '';
+    const d = list.filter(imgDone).length;
+    return `<span class="pill ${d === list.length ? 'a' : 'k'}">تصویربرداری ${d}/${list.length}</span>`;
+  };
+  const imgCell = list => list.length
+    ? list.map(it => {
+        const left = [!it.form ? 'برگه' : '', it.followup && !it.followupDone ? 'پیگیری' : ''].filter(Boolean).join('، ');
+        return `<div class="ck"><b dir="auto">${esc(it.w)}</b>${has(it.detail) ? ' - ' + esc(it.detail.trim()) : ''}${left ? ` <span class="faint">(مانده: ${left})</span>` : ''}</div>`;
+      }).join('')
+    : '<span class="faint">—</span>';
 
   /* photos */
   async function renderPhotos() {
@@ -2121,6 +2203,8 @@ button.cst:active{opacity:.6}
     syncRoutine(p);
     LISTS.forEach(renderTodos);
     renderChecks();
+    renderImg();
+    renderAdm(p);
     document.querySelectorAll('.tmbtn').forEach(b => b.setAttribute('aria-pressed', String(showTm.has(b.dataset.tm))));
     renderPhotos();
     const i = state.patients.indexOf(p);
@@ -2208,6 +2292,10 @@ button.cst:active{opacity:.6}
     } else if (cl.contains('cin')) {
       const it = p.consults.find(x => x.id === t.closest('.task').dataset.id);
       if (it) { if (cl.contains('cs')) it.svc = t.value; else it.why = t.value; it.t = consultT(it); }
+    } else if (cl.contains('idt')) {
+      const it = p.img.find(x => x.id === t.closest('.task').dataset.id);
+      if (it) it.detail = t.value;
+      growAny(t);
     } else if (cl.contains('ct')) {
       const en = p.course.find(x => x.id === t.closest('.ce').dataset.id);
       if (en) {
@@ -2312,7 +2400,7 @@ button.cst:active{opacity:.6}
       const k = tmb.dataset.tm;
       if (showTm.has(k)) showTm.delete(k); else showTm.add(k);
       tmb.setAttribute('aria-pressed', String(showTm.has(k)));
-      if (k === 'checks') renderChecks(); else renderTodos(k);
+      if (k === 'checks') renderChecks(); else if (k === 'img') renderImg(); else renderTodos(k);
       return;
     }
     const add = t.closest('[data-add]');
@@ -2330,6 +2418,29 @@ button.cst:active{opacity:.6}
       queueSave();
       return;
     }
+    const imgEl = t.closest('.task.img');
+    if (imgEl) {
+      const it = p.img.find(x => x.id === imgEl.dataset.id);
+      if (!it) return;
+      const step = t.closest('[data-imgstep]');
+      if (step) {
+        const k = step.dataset.imgstep;
+        it[k] = !it[k];
+        if (k === 'followup' && !it.followup) it.followupDone = false;
+        renderImg();
+        popEl(imgEl.querySelector(`[data-imgstep="${k}"] .cb`));
+        haptic('tick');
+        queueSave();
+      } else if (t.closest('.tcm')) {
+        const opened = toggleCm(it);
+        renderImg();
+        if (opened) focusCm(it.id);
+      } else if (t.closest('.tdel')) {
+        collapseThen(imgEl, () => { p.img = p.img.filter(x => x !== it); renderImg(); queueSave(); });
+      }
+      return;
+    }
+    if (t.closest('#addimg')) { openPicker('img'); return; }
     const dg = t.closest('#dischg');
     if (dg) { p.discharged = !p.discharged; syncDischarge(p); popEl(dg.querySelector('.cb')); haptic('tick'); updateNext(p); queueSave(); return; }
     const sum = t.closest('#sum');
@@ -2338,8 +2449,10 @@ button.cst:active{opacity:.6}
     if (seg) { p.sex = p.sex === seg.dataset.s ? '' : seg.dataset.s; updateSeg(p.sex); updateNext(p); queueSave(); return; }
     const ph = t.closest('.ph');
     if (ph) { openLB(ph.dataset.pid); return; }
+    const dueBtn = t.closest('.duebtn');
+    if (dueBtn) { const c = p.checks.find(x => x.id === dueBtn.dataset.due); if (c) openTs(c.id, dueOf(c) || Date.now(), 'due'); return; }
     const cts = t.closest('.cst');
-    if (cts) { const en = p.course.find(x => x.id === cts.closest('.ce').dataset.id); if (en) openTs(en); return; }
+    if (cts) { const en = p.course.find(x => x.id === cts.closest('.ce').dataset.id); if (en) openTs(en.id, en.ts || en.at || Date.now(), 'course'); return; }
     if (t.closest('[data-addc]')) { addCourse(); return; }
     const cdel = t.closest('.ce .tdel');
     if (cdel) {
@@ -2366,10 +2479,13 @@ button.cst:active{opacity:.6}
       if (t.closest('.addres')) {
         const r = newResult(c);
         c.r.push(r);
+        c.dueOverride = 0;   // a real check just happened; resume auto-calculating the next one
+        haptic('tick');   // 'commit' schedules a 2nd click 70ms later that would steal the focus back
         renderChecks();
-        const inp = $(`#t-checks .res[data-id="${r.id}"] .rv, #t-checks .res[data-id="${r.id}"] .vsf`);
-        if (inp) inp.focus();
-        anim(inp && inp.closest('.res'), [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300 });
+        const row = $(`#t-checks .res[data-id="${r.id}"]`);
+        const vs = row && row.querySelector('.vsf');
+        if (vs) vs.focus();
+        anim(row, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300 });
         queueSave();
       } else if (t.closest('.chead .tdel')) {
         if (c.r.length && !await ask('حذف چک؟', `«${c.w}» و نتایج ثبت‌شده‌اش حذف می‌شود.`, 'حذف', true)) return;
@@ -2471,6 +2587,7 @@ button.cst:active{opacity:.6}
     ['course', 'سیر بالینی', true],
     ['actions', 'اقدامات (با شرح حال و Daily routine)', true],
     ['consults', 'مشاوره‌ها', true],
+    ['img', 'تصویربرداری', true],
     ['checks', 'چک‌ها و نتایج', true],
     ['notes', 'توضیحات', false],
     ['disch', 'خلاصه پرونده و کد دارو', false]
@@ -2493,6 +2610,7 @@ button.cst:active{opacity:.6}
       if (on('info')) {
         if (!docEmpty(p.doctor)) lines.push('پزشک: ' + p.doctor.trim());
         if (has(p.mrn)) lines.push('شماره پرونده: ' + p.mrn.trim());
+        if (p.adm) lines.push(`تاریخ پذیرش: ${admText(p.adm)} ${p.adm.y} (روز ${admDayCount(p.adm)} بستری)`);
       }
       if (on('dxhx')) {
         if (has(p.dx)) lines.push('تشخیص نهایی: ' + p.dx.trim());
@@ -2507,6 +2625,10 @@ button.cst:active{opacity:.6}
         lines.push('اقدامات لازم:\n' + rt + (a ? '\n' + a : ''));
       }
       if (on('consults') && todo(p.consults, 'consults')) lines.push('مشاوره‌ها:\n' + todo(p.consults, 'consults'));
+      if (on('img') && p.img.length) {
+        const steps = it => [`برگه ${it.form ? '✓' : '✗'}`].concat(it.followup ? [`پیگیری ${it.followupDone ? '✓' : '✗'}`] : []).join('، ');
+        lines.push('تصویربرداری:\n' + p.img.map(it => `• ${it.w}${has(it.detail) ? ' - ' + it.detail.trim() : ''} [${steps(it)}]${has(it.c) ? ' (' + it.c.trim() + ')' : ''}${tm('img') ? tmTxt(it.at, it.dt) : ''}`).join('\n'));
+      }
       if (on('checks') && chk(p.checks)) lines.push('چک‌ها:\n' + chk(p.checks));
       if (on('disch') && p.discharged) {
         lines.push('خلاصه پرونده: ' + (p.summary ? 'نوشته شد' : 'نشده'));
@@ -2872,7 +2994,21 @@ button.cst:active{opacity:.6}
   });
 
   /* ---------- edit the date and time of a clinical-course note ---------- */
-  let tsEditId = null;
+  /* ---------- admission date + day-of-admission counter ---------- */
+  function admDayCount(adm) {
+    if (!adm) return null;
+    const t = jOf();
+    const a = jToDate(adm.y, adm.m, adm.d, 0, 0), b = jToDate(t.y, t.m, t.d, 0, 0);
+    return Math.max(1, Math.round((b - a) / 86400000) + 1);
+  }
+  function admText(adm) { return adm ? `${adm.d} ${MONTHS[adm.m - 1]}${adm.y !== jOf().y ? ' ' + adm.y : ''}` : ''; }
+  function renderAdm(p) {
+    const b = $('#admBtn');
+    b.innerHTML = p.adm
+      ? `<span dir="auto">${esc(admText(p.adm))}</span><span class="admday">روز ${admDayCount(p.adm)} بستری</span>`
+      : '<span class="faint">ثبت تاریخ پذیرش</span>';
+  }
+
   function jToDate(y, m, d, hh, mm) {
     const doy = (m <= 6 ? (m - 1) * 31 : 186 + (m - 7) * 30) + d - 1;
     let c = new Date(y + 621, 2, 21 + doy, hh, mm);
@@ -2898,9 +3034,13 @@ button.cst:active{opacity:.6}
     tsFillDays(j.y, j.m, j.d);
     $('#ts-time').value = hm(ts);
   }
-  function openTs(entry) {
-    tsEditId = entry.id;
-    const ts = entry.ts || entry.at || Date.now();
+let tsEditId = null, tsKind = 'course';
+  function openTs(id, ts, kind) {
+    tsEditId = id;
+    tsKind = kind || 'course';
+    $('#tst').textContent = tsKind === 'due' ? 'نوبت بعدی این چک' : tsKind === 'adm' ? 'تاریخ پذیرش' : 'تاریخ و ساعت این نوت';
+    $('#ts-now').textContent = tsKind === 'adm' ? 'امروز' : 'همین الان';
+    $('#ts-time').closest('.field').hidden = tsKind === 'adm';
     const j = jOf(new Date(ts)), now = jOf().y;
     let ys = '';
     for (let y = Math.min(now - 2, j.y); y <= Math.max(now + 1, j.y); y++) ys += `<option value="${y}">${y}</option>`;
@@ -2912,17 +3052,36 @@ button.cst:active{opacity:.6}
   ['#ts-mon', '#ts-year'].forEach(sel => $(sel).addEventListener('change', () => tsFillDays(+$('#ts-year').value, +$('#ts-mon').value, +$('#ts-day').value)));
   $('#ts-now').addEventListener('click', () => tsFillFrom(Date.now()));
   $('#ts-cancel').addEventListener('click', () => $('#ts').classList.remove('show'));
-  $('#ts').addEventListener('click', e => { if (e.target === $('#ts')) $('#ts').classList.remove('show'); });
-  $('#ts-save').addEventListener('click', () => {
+  $('#admBtn').addEventListener('click', () => {
     const p = get(current);
-    const en = p && p.course.find(x => x.id === tsEditId);
-    if (en) {
-      const y = +$('#ts-year').value, m = +$('#ts-mon').value, d = Math.min(+$('#ts-day').value, dim(y, m));
+    if (!p) return;
+    const a = p.adm;
+    openTs('adm', a ? jToDate(a.y, a.m, a.d, 0, 0).getTime() : Date.now(), 'adm');
+  });
+  $('#ts').addEventListener('click', e => { if (e.target === $('#ts')) $('#ts').classList.remove('show'); });
+$('#ts-save').addEventListener('click', () => {
+    const p = get(current);
+    if (!p) { $('#ts').classList.remove('show'); return; }
+    const y = +$('#ts-year').value, m = +$('#ts-mon').value, d = Math.min(+$('#ts-day').value, dim(y, m));
+    if (tsKind === 'adm') {
+      p.adm = { y, m, d };
+      renderAdm(p);
+      queueSave();
+    } else {
       const [hh, mm] = ($('#ts-time').value || '00:00').split(':').map(Number);
-      en.ts = jToDate(y, m, d, hh || 0, mm || 0).getTime();
-      en.man = true;   // set by hand: typing no longer re-stamps this note
-      p.course.sort((a, b) => (a.ts || a.at || 0) - (b.ts || b.at || 0));
-      renderCourse();
+      const ts = jToDate(y, m, d, hh || 0, mm || 0).getTime();
+      if (tsKind === 'due') {
+        const c = p.checks.find(x => x.id === tsEditId);
+        if (c) { c.dueOverride = ts; renderChecks(); }
+      } else {
+        const en = p.course.find(x => x.id === tsEditId);
+        if (en) {
+          en.ts = ts;
+          en.man = true;   // set by hand: typing no longer re-stamps this note
+          p.course.sort((a, b) => (a.ts || a.at || 0) - (b.ts || b.at || 0));
+          renderCourse();
+        }
+      }
       queueSave();
     }
     $('#ts').classList.remove('show');
@@ -2938,7 +3097,8 @@ button.cst:active{opacity:.6}
     const pending = list => list.filter(i => has(i.t) && (o.scope === 'all' || !i.d)).map(i => Object.assign({}, i, { id: uid() }));
     q.actions = o.actions ? pending(q.actions) : [];
     q.consults = o.consults ? pending(q.consults) : [];
-    q.checks = o.checks ? q.checks.map(c => Object.assign({}, c, { id: uid(), r: [], t0: Date.now(), dn: 0 })) : [];
+    q.checks = o.checks ? q.checks.map(c => Object.assign({}, c, { id: uid(), r: [], t0: Date.now(), dn: 0, dueOverride: 0 })) : [];
+    q.img = o.img ? q.img.map(it => Object.assign({}, it, { id: uid() })).filter(it => o.scope === 'all' || !imgDone(it)) : [];
     q.course = q.course.map(e => Object.assign({}, e, { id: uid() }));
     q.rt = { hx: p.rt && p.rt.hx ? p.rt.hx : 0, dn: 0, pc: 0 };   // history note carries over; the daily routine starts fresh
     q.drugCode = '';
@@ -2973,11 +3133,12 @@ button.cst:active{opacity:.6}
     $('#nxseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m === n.mode)));
     $('#nxopts').hidden = n.mode !== 'carry';
     $('#nxopts').querySelectorAll('[data-k]').forEach(b => b.setAttribute('aria-checked', String(!!n[b.dataset.k])));
-    $('#nxscope').hidden = n.mode !== 'carry' || !(n.actions || n.consults);
+    $('#nxscope').hidden = n.mode !== 'carry' || !(n.actions || n.consults || n.img);
     $('#nxscope').style.setProperty('--i', n.scope === 'all' ? 1 : 0);
     $('#nxscope').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.s === (n.scope || 'pending'))));
     $('#nxhint').textContent = `${carryN} بیمار منتقل می‌شود${disN ? `؛ ${disN} ترخیص‌شده نمی‌آید` : ''}.` +
       (n.actions || n.consults ? (n.scope === 'all' ? ' اقدام و مشاوره با همان وضعیت تیک می‌آید.' : ' از اقدام و مشاوره فقط موارد انجام‌نشده می‌آید.') : '') +
+      (n.img ? (n.scope === 'all' ? ' تصویربرداری هم می‌آید.' : ' از تصویربرداری فقط موارد ناتمام می‌آید.') : '') +
       (n.checks ? ' چک‌ها بدون نتایج قبلی می‌آید.' : '');
     $('#nxgo').textContent = n.mode === 'carry' && carryN ? `پایان شیفت و انتقال ${carryN} بیمار` : 'پایان شیفت';
   }
