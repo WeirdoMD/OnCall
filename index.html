@@ -411,6 +411,8 @@ textarea.cm:focus{outline:none;border-color:transparent;box-shadow:0 0 0 3px var
 .psegbar.scrolled{border-bottom-color:var(--line)}
 .pseg{--n:3;--i:0;position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);background:var(--seg-bg);border-radius:10px;padding:2px}
 .pseg button{position:relative;z-index:1;min-height:32px;border:0;background:none;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--ink2);transition:color .25s}
+#ovseg{min-height:40px}
+#ovseg button{font-size:10.8px;padding:0 1px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pseg button[aria-selected="true"]{color:var(--ink)}
 .pthumb{position:absolute;top:2px;bottom:2px;right:2px;width:calc((100% - 4px) / var(--n));border-radius:8px;background:var(--seg-thumb);
   box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.05);transform:translateX(calc(var(--i) * -100%));transition:transform .4s var(--ease)}
@@ -504,7 +506,7 @@ button.cst:active{opacity:.6}
 .duebtn.od{color:var(--warn);font-weight:600}
 .task.img .crow{padding:0 12px 0 4px}
 .itype{flex:1;font-weight:600;padding:2px 12px;color:var(--ink)}
-.idt{display:block;width:calc(100% - 24px);margin:0 12px 8px;min-height:44px;border:0;border-radius:10px;background:var(--press);
+.idt{display:block;width:calc(100% - 24px);margin:0 12px 8px;min-height:36px;border:0;border-radius:10px;background:var(--press);
   padding:8px 10px;line-height:1.6;font:inherit;font-size:15px;color:var(--ink);resize:none;overflow:hidden}
 .idt:focus{outline:2px solid var(--brand)}
 .task.img .sumrow{border-radius:0;border:0;border-top:1px solid var(--line);background:transparent;min-height:46px;font-size:14px}
@@ -557,7 +559,18 @@ button.cst:active{opacity:.6}
       <div class="stats" id="stats"></div>
       <button class="btn" id="share" type="button">اشتراک‌گذاری گزارش</button>
     </div>
-    <div class="tablewrap" id="tw"></div>
+    <div class="psegbar">
+      <div class="pseg" id="ovseg" style="--n:5" role="tablist">
+        <span class="pthumb"></span>
+        <button type="button" role="tab" data-ov="actions" aria-selected="true">اقدامات</button>
+        <button type="button" role="tab" data-ov="consults" aria-selected="false">مشاوره‌ها</button>
+        <button type="button" role="tab" data-ov="img" aria-selected="false">تصویربرداری</button>
+        <button type="button" role="tab" data-ov="summary" aria-selected="false">خلاصه‌ها</button>
+        <button type="button" role="tab" data-ov="all" aria-selected="false">همه</button>
+      </div>
+    </div>
+    <div class="scroll" id="ovlist"></div>
+    <div class="tablewrap" id="tw" hidden></div>
     <div class="empty" id="ov-empty" style="display:none">
       <p>هنوز بیماری ثبت نشده.</p>
       <p>بعد از ثبت بیمار، همه اطلاعات اینجا در یک جدول جمع می‌شود.</p>
@@ -658,7 +671,7 @@ button.cst:active{opacity:.6}
       <input class="inp" id="f-doctor" data-f="doctor" dir="auto" autocomplete="off" autocorrect="off" spellcheck="false"></div>
     <div class="two eq">
       <div class="field"><label for="f-mrn">شماره پرونده</label>
-        <input class="inp" id="f-mrn" data-f="mrn" dir="ltr" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+        <input class="inp" id="f-mrn" data-f="mrn" dir="ltr" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false"></div>
       <div class="field"><span class="lbl">تاریخ پذیرش</span>
         <button class="inp admbtn" id="admBtn" type="button" aria-label="ثبت تاریخ پذیرش"></button></div>
     </div>
@@ -1420,7 +1433,7 @@ button.cst:active{opacity:.6}
     else {
       const pp = get(id);
       const label = pp && has(pp.name) ? pp.name.trim() : 'این بیمار';
-      ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود.`, 'حذف', true).then(yes => {
+      ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود و به تاریخچه می‌رود.`, 'حذف', true).then(yes => {
         if (yes) { setX(s.row, -s.wrap.offsetWidth); setTimeout(() => collapseThen(s.wrap, () => removePatient(id)), 120); }
         else setX(s.row, 0);
       });
@@ -1448,16 +1461,19 @@ button.cst:active{opacity:.6}
     if (!p) return;
     const idx = state.patients.indexOf(p);
     state.patients.splice(idx, 1);
-    flush();
+    const entry = { id: uid(), endedAt: new Date().toISOString(), kind: 'deleted', ward: state.shift.ward, date: state.shift.date, patients: [p] };
+    history.unshift(entry);
+    flush(); flushH();
     renderList();
     tick();
-    toast('بیمار حذف شد', 'بازگردانی', () => {
+    toast('بیمار حذف شد و به تاریخچه رفت', 'بازگردانی', () => {
+      history = history.filter(x => x !== entry);
       state.patients.splice(Math.min(idx, state.patients.length), 0, p);
       sortPatients(state.patients);
       flashId = p.id;
-      flush();
+      flush(); flushH();
       renderCurrent();
-    }, () => dropPhotos([p]));   // photos are only erased once the undo window has passed
+    });   // the patient (and its photos) now lives in history, so nothing is erased
   }
   $('#list').addEventListener('click', e => {
     if (Date.now() < suppressUntil) return;
@@ -1494,20 +1510,96 @@ button.cst:active{opacity:.6}
   function renderOverview() {
     const ps = state.patients;
     $('#stats').innerHTML = statsHTML(ps);
-    $('#tw').style.display = ps.length ? '' : 'none';
-    $('#ov-empty').style.display = ps.length ? 'none' : '';
-    $('#tw').innerHTML = ps.length ? tableHTML(ps) : '';
+    renderOvSeg();
+    if (settings.ovMode === 'all') {
+      $('#ovlist').hidden = true;
+      $('#tw').hidden = false;
+      $('#tw').style.display = ps.length ? '' : 'none';
+      $('#ov-empty').style.display = ps.length ? 'none' : '';
+      $('#tw').innerHTML = ps.length ? tableHTML(ps) : '';
+    } else {
+      $('#tw').hidden = true;
+      $('#ov-empty').style.display = 'none';
+      $('#ovlist').hidden = false;
+      const items = settings.ovMode === 'actions' ? pendingActions() : settings.ovMode === 'consults' ? pendingConsults()
+        : settings.ovMode === 'img' ? pendingImgList() : pendingSummaries();
+      $('#ovlist').innerHTML = items.length
+        ? '<div class="group">' + items.map(pendingRowHTML).join('') + '</div>'
+        : `<div class="empty"><p>${OV_EMPTY[settings.ovMode]}</p></div>`;
+    }
   }
   $('#tw').addEventListener('click', e => {
     const r = e.target.closest('tr[data-id]');
     if (r) openSheet(r.dataset.id);
   });
 
+  /* ---------- overview: filterable pending lists, or the full table ---------- */
+  const OV_MODES = ['actions', 'consults', 'img', 'summary', 'all'];
+  const OV_EMPTY = { actions: 'اقدام باز نمانده.', consults: 'مشاوره باز نمانده.', img: 'تصویربرداری ناتمام نمانده.', summary: 'خلاصه پرونده‌ای در انتظار نیست.' };
+  function pendingActions() {
+    const out = [];
+    active(state.patients).forEach(p => realItems(p.actions).filter(i => !i.d).forEach(i => out.push({ p, text: i.t.trim(), extra: has(i.c) ? i.c.trim() : '' })));
+    return out;
+  }
+  function pendingConsults() {
+    const out = [];
+    active(state.patients).forEach(p => p.consults.filter(it => has(it.t) && !it.d).forEach(it => {
+      const left = STEPS_SHORT.filter((n, k) => !(it.st || [])[k]).join('، ');
+      out.push({ p, text: it.t.trim(), extra: left ? 'مانده: ' + left : '' });
+    }));
+    return out;
+  }
+  function pendingImgList() {
+    const out = [];
+    active(state.patients).forEach(p => p.img.filter(it => !imgDone(it)).forEach(it => {
+      const left = [!it.form ? 'برگه' : '', it.followup && !it.followupDone ? 'پیگیری' : ''].filter(Boolean).join('، ');
+      out.push({ p, text: it.w.trim() + (has(it.detail) ? ' - ' + it.detail.trim() : ''), extra: left ? 'مانده: ' + left : '' });
+    }));
+    return out;
+  }
+  function pendingSummaries() {
+    return state.patients.filter(p => p.discharged && !p.summary).map(p => ({ p, text: 'خلاصه پرونده نوشته نشده', extra: '' }));
+  }
+  function pendingRowHTML(it) {
+    const p = it.p;
+    return `<button class="row" type="button" data-pid="${p.id}">` +
+      `<span class="bedbadge"><small>تخت</small><b dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '—'}</b></span><span class="rbody">` +
+      `<span class="rname${has(p.name) ? '' : ' faint'}" dir="auto">${esc(has(p.name) ? p.name.trim() : 'بدون نام')}</span>` +
+      `<span class="rdx" dir="auto">${esc(it.text)}</span>` +
+      (it.extra ? `<span class="rmeta"><span dir="auto">${esc(it.extra)}</span></span>` : '') +
+      `</span></button>`;
+  }
+  function renderOvSeg() {
+    const i = OV_MODES.indexOf(settings.ovMode);
+    $('#ovseg').style.setProperty('--i', i);
+    $('#ovseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ov === settings.ovMode)));
+  }
+  $('#ovseg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-ov]');
+    if (!b || b.dataset.ov === settings.ovMode) return;
+    settings.ovMode = b.dataset.ov;
+    store.save(SKEY, settings);
+    haptic('tick');
+    renderOvSeg();
+    renderOverview();
+  });
+  $('#ovlist').addEventListener('click', e => {
+    const r = e.target.closest('.row');
+    if (r) openSheet(r.dataset.pid, 'act');
+  });
   /* ---------- history ---------- */
   function renderHistory() {
-    $('#hcount').textContent = history.length + ' شیفت';
+    $('#hcount').textContent = history.length + ' مورد';
     $('#hlist').innerHTML = history.length
       ? '<div class="group">' + history.map(h => {
+          if (h.kind === 'deleted') {
+            const p = h.patients[0];
+            return `<button class="row" type="button" data-h="${h.id}">` +
+              `<span class="bedbadge"><small>تخت</small><b dir="auto">${has(p.bed) ? esc(p.bed.trim()) : '—'}</b></span><span class="rbody">` +
+              `<span class="rname${has(p.name) ? '' : ' faint'}" dir="auto">${esc(has(p.name) ? p.name.trim() : 'بدون نام')}</span>` +
+              `<span class="rmeta"><span class="pill k">حذف‌شده</span><span dir="auto">${esc(stamp(Date.parse(h.endedAt)))}</span></span>` +
+              `</span></button>`;
+          }
           const open = openCount(h.patients, 'actions') + openCount(h.patients, 'consults');
           const nosum = h.patients.filter(p => p.discharged && !p.summary).length;
           const w = wardOf(h);
@@ -1517,7 +1609,7 @@ button.cst:active{opacity:.6}
             ((open || nosum) ? `<span class="pills">${open ? `<span class="pill k">${open} کار باز</span>` : ''}${nosum ? `<span class="pill k">${nosum} خلاصه ناقص</span>` : ''}</span>` : '') +
             `</span></button>`;
         }).join('') + '</div>'
-      : '<div class="empty"><p>هنوز شیفتی در تاریخچه نیست.</p><p>شیفتی که «پایان شیفت» بزنی اینجا ذخیره می‌شود و هر وقت خواستی برمی‌گردد.</p></div>';
+      : '<div class="empty"><p>هنوز چیزی در تاریخچه نیست.</p><p>پایان‌دادن شیفت یا حذف یک بیمار، اینجا ذخیره می‌شود و هر وقت خواستی برمی‌گردد.</p></div>';
   }
   $('#hlist').addEventListener('click', e => {
     const r = e.target.closest('.row');
@@ -1527,7 +1619,12 @@ button.cst:active{opacity:.6}
     const h = history.find(x => x.id === id);
     if (!h) return;
     currentH = id;
-    $('#htitle').textContent = [wardOf(h), dateText(h.date)].filter(Boolean).join('، ');
+    if (h.kind === 'deleted') {
+      const p = h.patients[0];
+      $('#htitle').textContent = [has(p.name) ? p.name.trim() : 'بدون نام', has(p.bed) ? 'تخت ' + p.bed.trim() : ''].filter(Boolean).join(' - ');
+    } else {
+      $('#htitle').textContent = [wardOf(h), dateText(h.date)].filter(Boolean).join('، ');
+    }
     $('#hstats').innerHTML = statsHTML(h.patients);
     $('#htw').innerHTML = tableHTML(h.patients);
     $('#htw').scrollTo(0, 0);
@@ -1541,6 +1638,15 @@ button.cst:active{opacity:.6}
   }
   $('#hclose').addEventListener('click', closeHistory);
 
+  function doRestoreDeleted(h) {
+    const p = h.patients[0];
+    history = history.filter(x => x.id !== h.id);
+    state.patients.push(normalize(JSON.parse(JSON.stringify(p))));
+    sortPatients(state.patients);
+    flashId = p.id;
+    flush(); flushH();
+    renderHistory();   // keep the history list in sync even while it's not the active tab
+  }
   function doRestore(h) {
     const cur = state.patients.filter(p => !isBlank(p));
     if (cur.length) history.unshift({ id: uid(), endedAt: new Date().toISOString(), ward: state.shift.ward, date: state.shift.date, patients: cur });
@@ -1549,10 +1655,19 @@ button.cst:active{opacity:.6}
     state.shift = { ward: h.ward || '', date: h.date || jOf() };
     flush(); flushH();
     renderShift();
+    renderHistory();
   }
   $('#hrestore').addEventListener('click', async () => {
     const h = history.find(x => x.id === currentH);
     if (!h) return;
+    if (h.kind === 'deleted') {
+      if (!await ask('بازگردانی این بیمار؟', 'این بیمار به لیست بیماران فعلی برمی‌گردد.', 'بازگردانی', false)) return;
+      doRestoreDeleted(h);
+      closeHistory();
+      show('list');
+      toast('بیمار بازگردانی شد');
+      return;
+    }
     const cur = state.patients.filter(p => !isBlank(p));
     const msg = cur.length
       ? `شیفت فعلی (${cur.length} بیمار) به تاریخچه می‌رود و این شیفت جایگزین آن می‌شود.`
@@ -1566,7 +1681,8 @@ button.cst:active{opacity:.6}
   $('#hdel').addEventListener('click', async () => {
     const h = history.find(x => x.id === currentH);
     if (!h) return;
-    if (!await ask('حذف از تاریخچه؟', `اطلاعات ${h.patients.length} بیمار این شیفت برای همیشه حذف می‌شود.`, 'حذف', true)) return;
+    const delMsg = h.kind === 'deleted' ? 'اطلاعات این بیمار برای همیشه حذف می‌شود.' : `اطلاعات ${h.patients.length} بیمار این شیفت برای همیشه حذف می‌شود.`;
+    if (!await ask('حذف از تاریخچه؟', delMsg, 'حذف', true)) return;
     history = history.filter(x => x.id !== h.id);
     dropPhotos(h.patients);
     flushH();
@@ -1580,7 +1696,7 @@ button.cst:active{opacity:.6}
 
   /* ---------- check reminders (work while the app is open) ---------- */
   const SKEY = 'shift-tracker-settings';
-  const settings = { sound: true, awake: false, next: { mode: 'carry', scope: 'pending', actions: false, consults: false, checks: false, img: false },
+  const settings = { sound: true, awake: false, ovMode: 'actions', next: { mode: 'carry', scope: 'pending', actions: false, consults: false, checks: false, img: false },
     share: { on: {}, tm: { course: true, actions: true, consults: true, checks: true }, discharged: true } };
   const alerted = new Set();
   let firstTick = true;
@@ -1858,7 +1974,7 @@ function dueLine(c) {
 
   /* ---------- patient editor: rendering helpers ---------- */
   const growAny = el => {
-    const min = el.classList.contains('tt') ? 46 : el.classList.contains('ct') ? 44 : el.classList.contains('cm') ? 40 : 92;
+    const min = el.classList.contains('tt') ? 46 : el.classList.contains('ct') ? 44 : el.classList.contains('idt') ? 36 : el.classList.contains('cm') ? 40 : 92;
     el.style.height = 'auto';
     el.style.height = Math.max(min, el.scrollHeight + (min === 92 ? 2 : 0)) + 'px';
   };
@@ -2041,7 +2157,7 @@ let pkMode = 'check';
       `<div class="crow"><span class="clab">تصویربرداری</span><b class="itype" dir="auto">${esc(it.w)}</b>` +
       `<button class="tcm${has(it.c) ? ' on' : ''}" type="button" aria-label="کامنت">${ICON_CM}</button>` +
       `<button class="tdel" type="button" aria-label="حذف">${CROSS}</button></div>` +
-      `<textarea class="idt" rows="1" dir="auto" spellcheck="false" placeholder="مثلاً شکم و لگن و سایز کبد">${esc(it.detail)}</textarea>` +
+      `<textarea class="idt" rows="1" dir="auto" spellcheck="false" placeholder="توضیحات">${esc(it.detail)}</textarea>` +
       `<button class="sumrow" type="button" role="checkbox" data-imgstep="form" aria-checked="${it.form}"><span class="cb">${CHECK}</span>برگه پر شد</button>` +
       `<button class="sumrow" type="button" role="checkbox" data-imgstep="followup" aria-checked="${it.followup}"><span class="cb">${CHECK}</span>پیگیری ریپورت</button>` +
       `<button class="sumrow sumline" type="button" role="checkbox" data-imgstep="followupDone" aria-checked="${it.followupDone}"${it.followup ? '' : ' hidden'}><span class="cb">${CHECK}</span>پیگیری ریپورت انجام شد</button>` +
@@ -2540,11 +2656,9 @@ let pkMode = 'check';
     const p = get(current);
     if (!p) return;
     const label = has(p.name) ? p.name.trim() : 'این بیمار';
-    if (!await ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود.`, 'حذف', true)) return;
-    state.patients = state.patients.filter(x => x !== p);
-    dropPhotos([p]);
-    current = null;
-    closeSheet();
+    if (!await ask('حذف بیمار؟', `اطلاعات «${label}» حذف می‌شود و به تاریخچه می‌رود.`, 'حذف', true)) return;
+    closeSheet();   // saves/prunes normally first; the patient stays since it isn't blank
+    removePatient(p.id);
   });
 
   /* ---------- dialog + toast ---------- */
@@ -2902,7 +3016,7 @@ let pkMode = 'check';
       g.insertBefore(mk('redobtn', 'جلو (Redo)', REDO), g.firstChild);
       g.insertBefore(mk('undobtn', 'برگشت (Undo)', UNDO), g.firstChild);
     });
-    const pb = document.querySelector('.psegbar');   // patient sheet: prev/next already crowd the shead
+    const pb = document.querySelector('#sheet .psegbar');   // patient sheet: prev/next already crowd the shead
     if (pb) {
       pb.insertBefore(mk('redobtn', 'جلو (Redo)', REDO), pb.firstChild);
       pb.insertBefore(mk('undobtn', 'برگشت (Undo)', UNDO), pb.firstChild);
@@ -3197,7 +3311,8 @@ $('#ts-save').addEventListener('click', () => {
   (async () => {
     const [saved, hist, th, , ft, st] = await Promise.all([store.load(KEY), store.load(HKEY), store.load(TKEY), photoStore.init(), store.load(FKEY), store.load(SKEY)]);
     if (st) { settings.sound = st.sound !== false; settings.awake = !!st.awake; if (st.next) settings.next = Object.assign(settings.next, st.next);
-      if (st.share) settings.share = { on: Object.assign({}, st.share.on), tm: Object.assign(settings.share.tm, st.share.tm), discharged: st.share.discharged !== false }; }
+      if (st.share) settings.share = { on: Object.assign({}, st.share.on), tm: Object.assign(settings.share.tm, st.share.tm), discharged: st.share.discharged !== false };
+      if (st.ovMode && OV_MODES.includes(st.ovMode)) settings.ovMode = st.ovMode; }
     await loadSavedFonts();
     const fid = FONTS.some(f => f[0] === ft) && fontReady[ft] ? ft : 'system';
     fontId = fid; document.documentElement.dataset.font = fid;
